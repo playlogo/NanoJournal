@@ -1,0 +1,10 @@
+body {
+	margin: 0;
+	padding: 0;
+
+	--bg: #222627;
+	--fg: #fcfcfc;
+
+	background-color: var(--bg);
+	overflow: hidden;
+}

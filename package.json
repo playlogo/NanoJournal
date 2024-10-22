@@ -1,0 +1,16 @@
+{
+  "name": "nanojournal",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently 'tsc -w' 'live-server --watch=dist,index.html'"
+  },
+  "author": "",
+  "license": "ISC",
+  "dev-dependencies": {
+    "concurrently": "^9.0.1",
+    "live-server": "^1.2.2",
+    "typescript": "^5.6.3"
+  }
+}
