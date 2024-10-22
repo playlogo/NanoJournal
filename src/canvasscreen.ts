@@ -243,6 +243,44 @@ class ScreenState {
 			}
 		}
 	}
+
+	enter() {
+		// Check if cursor at start
+		if (this.cursorPosition.x === 0) {
+			// Insert newline above
+			const before = this.content.slice(0, this.cursorPosition.y);
+			const after = this.content.slice(this.cursorPosition.y);
+
+			this.content = [...before, "", ...after];
+
+			this.cursorPosition.y += 1;
+		} else {
+			// Break current line at cursor position
+			const before = this.content.slice(0, this.cursorPosition.y);
+			const after = this.content.slice(this.cursorPosition.y + 1);
+			const currentLine = this.content[this.cursorPosition.y];
+
+			this.content = [
+				...before,
+				currentLine.slice(0, this.cursorPosition.x),
+				currentLine.slice(this.cursorPosition.x),
+				...after,
+			];
+
+			this.cursorPosition.y += 1;
+			this.cursorPosition.x = 0;
+		}
+	}
+
+	type(char: string) {
+		// Insert the char before cursor position
+		this.content[this.cursorPosition.y] =
+			this.content[this.cursorPosition.y].slice(0, this.cursorPosition.x) +
+			char +
+			this.content[this.cursorPosition.y].slice(this.cursorPosition.x);
+
+		this.cursorPosition.x += 1;
+	}
 }
 
 class ScreenStyle {
@@ -469,8 +507,22 @@ export class CanvasScreen {
 			this.state.delete(event.ctrlKey);
 		}
 
+		// Delete text - Backspace
 		if (event.key === "Backspace") {
 			this.state.backspace(event.ctrlKey);
+		}
+
+		// New line - Enter
+		if (event.key === "Enter") {
+			this.state.enter();
+		}
+
+		// Normal typing!
+		// From: https://stackoverflow.com/questions/51296562/how-to-tell-whether-keyboardevent-key-is-a-printable-character-or-control-charac
+		if (event.key.length == 1 || (event.key.length > 1 && /[^a-zA-Z0-9]/.test(event.key))) {
+			this.state.type(event.key);
+		} else if (event.key === "Spacebar") {
+			this.state.type(" ");
 		}
 
 		// Fallback
