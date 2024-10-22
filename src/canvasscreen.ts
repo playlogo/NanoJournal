@@ -146,6 +146,11 @@ class ScreenState {
 				// At the bottom...
 			} else {
 				this.cursorPosition.y += 1;
+
+				// Snap cursor to ending of text if over
+				if (this.cursorPosition.x > this.content[this.cursorPosition.y].length) {
+					this.cursorPosition.x = this.content[this.cursorPosition.y].length;
+				}
 			}
 		}
 
@@ -155,6 +160,11 @@ class ScreenState {
 				// At the top...
 			} else {
 				this.cursorPosition.y -= 1;
+
+				// Snap cursor to ending of text if over
+				if (this.cursorPosition.x > this.content[this.cursorPosition.y].length) {
+					this.cursorPosition.x = this.content[this.cursorPosition.y].length;
+				}
 			}
 		}
 	}
