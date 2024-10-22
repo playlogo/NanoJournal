@@ -55,7 +55,7 @@ class ScreenState {
 		} lines ]`;
 	}
 
-	moveCursor(direction: [number, number]) {
+	moveCursor(direction: [number, number], ctrl: boolean) {
 		// Move to left
 		if (equals(direction, [-1, 0])) {
 			// Start of line
@@ -68,7 +68,27 @@ class ScreenState {
 					this.cursorPosition.x = this.content[this.cursorPosition.y].length + 1;
 				}
 			} else {
-				this.cursorPosition.x -= 1;
+				if (ctrl) {
+					this.cursorPosition.x -= 2;
+
+					// Jump whole word
+					while (true) {
+						// Check if at start
+						if (this.cursorPosition.x <= 0) {
+							break;
+						}
+
+						if (this.content[this.cursorPosition.y][this.cursorPosition.x] === " ") {
+							this.cursorPosition.x += 1;
+
+							break;
+						}
+
+						this.cursorPosition.x -= 1;
+					}
+				} else {
+					this.cursorPosition.x -= 1;
+				}
 			}
 
 			return;
@@ -86,7 +106,35 @@ class ScreenState {
 					this.cursorPosition.y += 1;
 				}
 			} else {
-				this.cursorPosition.x += 1;
+				if (ctrl) {
+					let wasSpace = false;
+
+					// Jump whole word
+					while (true) {
+						// Check if at start
+						if (this.cursorPosition.x >= this.content[this.cursorPosition.y].length) {
+							// Jump to next line
+							if (this.cursorPosition.y < this.content.length) {
+								this.cursorPosition.y += 1;
+								this.cursorPosition.x = 0;
+								wasSpace = false;
+							}
+							break;
+						}
+
+						if (this.content[this.cursorPosition.y][this.cursorPosition.x] === " ") {
+							wasSpace = true;
+						} else {
+							if (wasSpace == true) {
+								break;
+							}
+						}
+
+						this.cursorPosition.x += 1;
+					}
+				} else {
+					this.cursorPosition.x += 1;
+				}
 			}
 			return;
 		}
@@ -94,7 +142,7 @@ class ScreenState {
 		//TODO: Keep x position on vertical move
 		// Move down
 		if (equals(direction, [0, -1])) {
-			if (this.cursorPosition.y === this.content.length + 1) {
+			if (this.cursorPosition.y === this.content.length) {
 				// At the bottom...
 			} else {
 				this.cursorPosition.y += 1;
@@ -107,6 +155,91 @@ class ScreenState {
 				// At the top...
 			} else {
 				this.cursorPosition.y -= 1;
+			}
+		}
+	}
+
+	delete(ctrl: boolean) {
+		// Check if in last line
+		if (this.cursorPosition.y === this.content.length) {
+			// Do nothing
+		} else {
+			// Check if at end of line
+			if (this.cursorPosition.x === this.content[this.cursorPosition.y].length) {
+				// Move next line up to current
+				const nextLine = this.content.splice(this.cursorPosition.y + 1, 1);
+				this.content[this.cursorPosition.y] += nextLine;
+			} else {
+				let wasSpace = false;
+
+				while (true) {
+					// Remove character at cursor
+					this.content[this.cursorPosition.y] =
+						this.content[this.cursorPosition.y].slice(0, this.cursorPosition.x) +
+						this.content[this.cursorPosition.y].slice(this.cursorPosition.x + 1);
+
+					if (!ctrl) {
+						break;
+					}
+
+					if (this.cursorPosition.x === this.content[this.cursorPosition.y].length) {
+						break;
+					}
+
+					if (this.content[this.cursorPosition.y][this.cursorPosition.x] === " ") {
+						wasSpace = true;
+					} else {
+						if (wasSpace == true) {
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	backspace(ctrl: boolean) {
+		if (this.cursorPosition.x === 0) {
+			// Check if in first line
+			if (this.cursorPosition.y === 0) {
+				// Do nothing
+			} else {
+				// Wrap up to prev line
+				const currentLine = this.content.splice(this.cursorPosition.y, 1);
+				const xPos = this.content[this.cursorPosition.y - 1].length;
+				this.content[this.cursorPosition.y - 1] += currentLine;
+
+				// Move cursor to position
+				this.cursorPosition.y -= 1;
+				this.cursorPosition.x = xPos;
+			}
+		} else {
+			let wasSpace = false;
+
+			while (true) {
+				// Remove character before cursor
+				this.content[this.cursorPosition.y] =
+					this.content[this.cursorPosition.y].slice(0, this.cursorPosition.x - 1) +
+					this.content[this.cursorPosition.y].slice(this.cursorPosition.x);
+
+				// And move cursor
+				this.cursorPosition.x -= 1;
+
+				if (!ctrl) {
+					break;
+				}
+
+				if (this.cursorPosition.x === 0) {
+					break;
+				}
+
+				if (this.content[this.cursorPosition.y][this.cursorPosition.x - 2] === " ") {
+					wasSpace = true;
+				} else {
+					if (wasSpace == true) {
+						break;
+					}
+				}
 			}
 		}
 	}
@@ -161,20 +294,27 @@ export class CanvasScreen {
 			this.style.padding + 22 + this.state.cursorPosition.y * 18,
 		];
 
-		if (document.hasFocus() || true) {
+		if (document.hasFocus()) {
 			this.context.fillStyle = FG;
 			this.context.fillRect(pos[0], pos[1], 10, 18);
 
-			// Redraw character
-			if (this.state.cursorPosition.y <= this.state.content.length) {
-				if (this.state.cursorPosition.x <= this.state.content[this.state.cursorPosition.y].length) {
-					this.context.fillStyle = BG;
-					this.context.fillText(
-						this.state.content[this.state.cursorPosition.y][this.state.cursorPosition.x],
-						pos[0],
-						pos[1] + 14
-					);
+			try {
+				// Redraw character
+				if (this.state.cursorPosition.y < this.state.content.length) {
+					if (
+						this.state.cursorPosition.x < this.state.content[this.state.cursorPosition.y].length
+					) {
+						this.context.fillStyle = BG;
+						this.context.fillText(
+							this.state.content[this.state.cursorPosition.y][this.state.cursorPosition.x],
+							pos[0],
+							pos[1] + 14
+						);
+					}
 				}
+			} catch {
+				console.log(JSON.stringify(this.state.cursorPosition));
+				console.log(JSON.stringify(this.state.content));
 			}
 		} else {
 			this.context.strokeStyle = FG;
@@ -307,6 +447,8 @@ export class CanvasScreen {
 		if (event.ctrlKey) {
 			//this.state.handleCommand("CTL-" + event.key);
 		}
+
+		// Cursor movement
 		if (["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(event.key)) {
 			this.state.moveCursor(
 				event.key === "ArrowLeft"
@@ -317,8 +459,21 @@ export class CanvasScreen {
 					? [0, -1]
 					: event.key === "ArrowUp"
 					? [0, 1]
-					: [0, 0]
+					: [0, 0],
+				event.ctrlKey
 			);
 		}
+
+		// Delete text - Delete
+		if (event.key === "Delete") {
+			this.state.delete(event.ctrlKey);
+		}
+
+		if (event.key === "Backspace") {
+			this.state.backspace(event.ctrlKey);
+		}
+
+		// Fallback
+		console.log(event.key);
 	}
 }
