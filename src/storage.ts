@@ -43,13 +43,9 @@ export class StorageAdapterLocal implements StorageAdapter {
 			return [];
 		}
 
-		const out: string[] = [];
-
-		(JSON.parse(window.localStorage.getItem("notes")!) as Note[]).forEach((note) => {
-			out.push(note.fileName);
-		});
-
-		return out;
+		return (JSON.parse(window.localStorage.getItem("notes")!) as Note[])
+			.sort((a, b) => (a.creationDate > b.creationDate ? -1 : 1))
+			.map((note) => note.fileName);
 	}
 
 	loadNote(fileName: string) {
@@ -61,12 +57,31 @@ export class StorageAdapterLocal implements StorageAdapter {
 	}
 
 	saveNote(fileName: string, content: string[]): void {
+		const notes = JSON.parse(window.localStorage.getItem("notes")!) as Note[];
+
+		if (fileName === "") {
+			// Find next free untitled name
+			const nextId =
+				notes
+					.filter((note) => note.fileName.startsWith("Untitled"))
+					.map((note) => {
+						return parseInt(note.fileName.replace("Untitled", ""));
+					})
+					.sort((a, b) => (a > b ? 1 : -1))[0] + 1;
+
+			fileName = "Untitled" + nextId;
+		}
+
 		window.localStorage.setItem(`note_${fileName}`, JSON.stringify(content));
 
-		// Add note to note list if it doesn't exist
 		if (!this.noteList().includes(fileName)) {
-			const notes = JSON.parse(window.localStorage.getItem("notes")!) as Note[];
+			// Add note to note list if it doesn't exist
 			notes.push({ creationDate: new Date(), fileName: fileName });
+			window.localStorage.setItem("notes", JSON.stringify(notes));
+		} else {
+			// Update note creation date
+			const note = notes.find((note) => note.fileName === fileName);
+			note!.creationDate = new Date();
 			window.localStorage.setItem("notes", JSON.stringify(notes));
 		}
 	}

@@ -5,7 +5,7 @@ import { StorageAdapter, StorageAdapterLocal } from "./storage.js";
 
 export class ManagerState {
 	storageAdapter: StorageAdapter;
-	noteNames: string[];
+	notes: string[] | undefined;
 
 	editor: Editor | undefined;
 	currentlyEditing: boolean | string = false;
@@ -13,7 +13,7 @@ export class ManagerState {
 	context: CanvasRenderingContext2D;
 
 	constructor(demo: boolean, context: CanvasRenderingContext2D) {
-		this.noteNames = [];
+		this.notes = undefined;
 		this.context = context;
 
 		if (demo) {
@@ -21,6 +21,14 @@ export class ManagerState {
 		} else {
 			throw new Error("Not implemented");
 		}
+
+		// Load notes
+		setTimeout(
+			(() => {
+				this.notes = this.storageAdapter.noteList();
+			}).bind(this),
+			10
+		);
 	}
 
 	openEditor(noteName?: string) {
@@ -37,6 +45,14 @@ export class ManagerState {
 	editorCloseCallback() {
 		this.currentlyEditing = false;
 		this.editor = undefined;
+
+		// Reload notes
+		setTimeout(
+			(() => {
+				this.notes = this.storageAdapter.noteList();
+			}).bind(this),
+			10
+		);
 	}
 }
 

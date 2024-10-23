@@ -9,8 +9,6 @@ class MenuState {
 
 	managerState: ManagerState;
 
-	notes: string[] | undefined = undefined;
-
 	constructor(state: ManagerState) {
 		this.managerState = state;
 	}
@@ -40,7 +38,8 @@ class MenuState {
 		// Move up
 		if (equals(direction, [0, 1])) {
 			if (this.cursorPos.y == 0) {
-				this.cursorPos.y = this.notes === undefined ? 0 : this.notes.length - 1;
+				this.cursorPos.y =
+					this.managerState.notes === undefined ? 0 : this.managerState.notes.length - 1;
 			} else {
 				this.cursorPos.y--;
 			}
@@ -48,7 +47,10 @@ class MenuState {
 
 		// Move down
 		if (equals(direction, [0, -1])) {
-			if (this.cursorPos.y == (this.notes === undefined ? 0 : this.notes.length - 1)) {
+			if (
+				this.cursorPos.y ==
+				(this.managerState.notes === undefined ? 0 : this.managerState.notes.length - 1)
+			) {
 				this.cursorPos.y = 0;
 			} else {
 				this.cursorPos.y++;
@@ -66,7 +68,8 @@ class MenuState {
 		}
 
 		if (this.cursorPos.y - this.notesScrollPos > maxY) {
-			this.notesScrollPos = this.notes === undefined ? 0 : this.notes.length - maxY;
+			this.notesScrollPos =
+				this.managerState.notes === undefined ? 0 : this.managerState.notes.length - maxY;
 		}
 	}
 
@@ -74,11 +77,11 @@ class MenuState {
 		switch (this.cursorPos.x) {
 			case 0:
 				// Load note
-				if (this.notes === undefined) {
+				if (this.managerState.notes === undefined) {
 					return;
 				}
 
-				const fileName = this.notes![this.cursorPos.y];
+				const fileName = this.managerState.notes![this.cursorPos.y];
 				this.managerState.openEditor(fileName);
 				break;
 			case 1:
@@ -102,14 +105,6 @@ export class Menu {
 		this.context = context;
 		this.managerState = state;
 		this.state = new MenuState(state);
-
-		// Load notes
-		setTimeout(
-			(() => {
-				this.state.notes = this.managerState.storageAdapter.noteList();
-			}).bind(this),
-			10
-		);
 	}
 
 	// Draw to the screen
@@ -153,12 +148,14 @@ export class Menu {
 		// Title text
 		this.context.fillStyle = FG;
 		this.context.fillText(
-			this.state.notes != undefined ? `Notes: ${this.state.notes.length}` : "Loading...",
+			this.state.managerState.notes != undefined
+				? `Notes: ${this.state.managerState.notes.length}`
+				: "Loading...",
 			this.context.canvas.width / 2 - 270,
 			this.context.canvas.height / 2 - 220
 		);
 
-		if (this.state.notes === undefined) {
+		if (this.state.managerState.notes === undefined) {
 			return;
 		}
 
@@ -167,7 +164,7 @@ export class Menu {
 
 		for (
 			let i = this.state.notesScrollPos;
-			i < this.state.notes!.length && i < this.state.notesScrollPos + 10;
+			i < this.state.managerState.notes!.length && i < this.state.notesScrollPos + 10;
 			i++
 		) {
 			if (this.state.cursorPos.y === i && this.state.cursorPos.x === 0) {
@@ -186,7 +183,7 @@ export class Menu {
 			}
 
 			this.context.fillText(
-				this.state.notes![i].substring(0, 24),
+				this.state.managerState.notes![i].substring(0, 24),
 				this.context.canvas.width / 2 - 270,
 				this.context.canvas.height / 2 - 200 + i * 18 - this.state.notesScrollPos * 18
 			);

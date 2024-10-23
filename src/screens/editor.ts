@@ -344,9 +344,10 @@ class ScreenModeExiting extends ScreenMode {
 }
 
 class ScreenModeSaving extends ScreenMode {
+	fileNameCursorPosition = 0;
+
 	updateStatus(screenState: ScreenState) {
 		screenState.statusStyle = "full";
-		screenState.status = "Save modified buffer?";
 	}
 
 	handleCommand(command: string, screenState: ScreenState): boolean {
@@ -360,14 +361,65 @@ class ScreenModeSaving extends ScreenMode {
 				return false;
 		}
 	}
+
 	type(char: string, screenState: ScreenState) {
-		if (char === "n" || char === "N") {
-			screenState.closeCallback();
+		if (screenState.fileName.length === 0) {
+			screenState.fileName = char;
 			return;
-		} else if (char === "y" || char === "Y") {
-			screenState.mode = ScreenGlobalState.SAVING;
-			screenState.mode.updateStatus(screenState);
 		}
+
+		const start = screenState.fileName.slice(0, this.fileNameCursorPosition);
+		const end = screenState.fileName.slice(this.fileNameCursorPosition);
+
+		screenState.fileName = start + char + end;
+		this.fileNameCursorPosition += 1;
+	}
+
+	moveCursor(direction: [number, number], ctrl: boolean, screenState: ScreenState) {
+		if (equals(direction, [-1, 0])) {
+			this.fileNameCursorPosition = Math.max(0, this.fileNameCursorPosition - 1);
+		} else if (equals(direction, [1, 0])) {
+			this.fileNameCursorPosition = Math.min(
+				screenState.fileName.length,
+				this.fileNameCursorPosition + 1
+			);
+		}
+
+		if (ctrl) {
+			if (equals(direction, [-1, 0])) {
+				this.fileNameCursorPosition = 0;
+			} else if (equals(direction, [1, 0])) {
+				this.fileNameCursorPosition = screenState.fileName.length;
+			}
+		}
+	}
+
+	delete(ctrl: boolean, screenState: ScreenState) {
+		if (screenState.fileName.length === 0) {
+			return;
+		}
+
+		const start = screenState.fileName.slice(0, this.fileNameCursorPosition);
+		const end = screenState.fileName.slice(this.fileNameCursorPosition + 1);
+
+		screenState.fileName = start + end;
+	}
+
+	backspace(ctrl: boolean, screenState: ScreenState) {
+		if (screenState.fileName.length === 0) {
+			return;
+		}
+
+		const start = screenState.fileName.slice(0, this.fileNameCursorPosition - 1);
+		const end = screenState.fileName.slice(this.fileNameCursorPosition);
+
+		screenState.fileName = start + end;
+		this.fileNameCursorPosition = Math.max(0, this.fileNameCursorPosition - 1);
+	}
+
+	enter(screenState: ScreenState) {
+		screenState.storageAdapter.saveNote(screenState.fileName, screenState.content);
+		screenState.closeCallback();
 	}
 }
 
@@ -464,7 +516,9 @@ export class Editor {
 		this._render_top_bar();
 
 		// Draw cursor
-		this._render_cursor(lines);
+		if (this.state.mode !== ScreenGlobalState.SAVING) {
+			this._render_cursor(lines);
+		}
 
 		// Draw text
 		this._render_buffer(lines);
@@ -662,7 +716,43 @@ export class Editor {
 				}
 				break;
 			case ScreenGlobalState.SAVING:
-				throw new Error("Not implemented");
+				// Background
+				this.context.fillRect(
+					this.style.padding,
+					this.context.canvas.height - this.style.padding - 18 - 18 * 2,
+					this.context.canvas.width - this.style.padding * 2,
+					18
+				);
+
+				// Text
+				const prefix = "File Name to Write: ";
+				this.context.fillStyle = BG;
+
+				this.context.fillText(
+					prefix + this.state.fileName,
+					this.style.padding,
+					this.context.canvas.height - this.style.padding - 18 - 22
+				);
+
+				// Cursor
+				this.context.fillRect(
+					this.style.padding +
+						(prefix.length + this.state.mode.fileNameCursorPosition!) *
+							this.context.measureText(" ").width,
+					this.context.canvas.height - this.style.padding - 18 - 35,
+					10,
+					18
+				);
+
+				// Redraw character
+				this.context.fillStyle = FG;
+				this.context.fillText(
+					this.state.fileName[this.state.mode.fileNameCursorPosition!] ?? " ",
+					this.style.padding +
+						(prefix.length + this.state.mode.fileNameCursorPosition!) *
+							this.context.measureText(" ").width,
+					this.context.canvas.height - this.style.padding - 18 - 22
+				);
 		}
 	}
 
@@ -730,6 +820,17 @@ export class Editor {
 			for (let i = 0; i < 4; i++) {
 				this.state.mode.type(" ", this.state);
 			}
+			event.preventDefault();
+			return;
+		}
+
+		// Home and End
+		if (event.key === "Home") {
+			this.state.cursorPosition.x = 0;
+			event.preventDefault();
+			return;
+		} else if (event.key === "End") {
+			this.state.cursorPosition.x = this.state.content[this.state.cursorPosition.y].length;
 			event.preventDefault();
 			return;
 		}
