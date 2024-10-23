@@ -7,7 +7,7 @@ settings:
 importers:
 
   .:
-    dependencies:
+    devDependencies:
       concurrently:
         specifier: ^9.0.1
         version: 9.0.1
