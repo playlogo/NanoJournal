@@ -1,4 +1,5 @@
 import { BG, FG } from "../colors.js";
+import { StorageAdapter } from "../storage.js";
 
 const equals = (one: [number, number], two: [number, number]) => {
 	return one.every((val, index) => val === two[index]);
@@ -36,20 +37,28 @@ class ScreenState {
 	mode: any = ScreenGlobalState.WRITING;
 
 	fileName = "";
-	content = [
-		"Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut",
-		"labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores ",
-		"et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. ",
-		"Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et",
-		" dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.",
-		" Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-	];
+	content: string[] = [""];
 	status = "";
 	statusStyle: "full" | "middle" = "middle";
 
 	cursorPosition = { x: 0, y: 0 };
-
 	scrollPosition = { x: 0, y: 0 };
+
+	storageAdapter: StorageAdapter;
+	closeCallback: () => void;
+
+	constructor(fileName: string, storageAdapter: StorageAdapter, closeCallback: () => void) {
+		this.fileName = fileName;
+
+		this.storageAdapter = storageAdapter;
+		this.closeCallback = closeCallback;
+
+		if (fileName.length > 0) {
+			setTimeout(() => {
+				this.content = this.storageAdapter.loadNote(this.fileName);
+			}, 10);
+		}
+	}
 
 	updateStatus() {
 		this.status = `[ ${this.fileName.length == 0 ? "New Buffer" : this.fileName} | ${
@@ -306,13 +315,19 @@ export class Editor {
 	name: string;
 	context: CanvasRenderingContext2D;
 
-	state: ScreenState = new ScreenState();
-
+	state: ScreenState;
 	style: ScreenStyle = new ScreenStyle();
 
-	constructor(name: string, context: CanvasRenderingContext2D) {
+	constructor(
+		name: string,
+		context: CanvasRenderingContext2D,
+		storageAdapter: StorageAdapter,
+		closeCallback: () => void
+	) {
 		this.name = name;
 		this.context = context;
+
+		this.state = new ScreenState(this.name, storageAdapter, closeCallback);
 	}
 
 	// Draw to the screen
@@ -435,7 +450,11 @@ export class Editor {
 
 		// Filename
 		this.context.fillStyle = BG;
-		this.context.fillText(this.name, (this.context.canvas.width - this.name.length * 14) / 2, 20);
+		this.context.fillText(
+			this.name.length > 0 ? this.name : "New Buffer",
+			(this.context.canvas.width - this.name.length * 14) / 2,
+			20
+		);
 	}
 
 	_render_bottom_menu() {
@@ -574,6 +593,11 @@ export class Editor {
 			this.state.type(event.key);
 		} else if (event.key === "Spacebar") {
 			this.state.type(" ");
+		} else if (event.key === "Tab") {
+			for (let i = 0; i < 4; i++) {
+				this.state.type(" ");
+			}
+			event.preventDefault();
 		}
 
 		// Fallback

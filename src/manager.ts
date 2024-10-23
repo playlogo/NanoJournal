@@ -30,7 +30,13 @@ export class ManagerState {
 			this.currentlyEditing = "";
 		}
 
-		this.editor = new Editor(this.currentlyEditing, this.context);
+		const cb = this.editorCloseCallback.bind(this);
+		this.editor = new Editor(this.currentlyEditing, this.context, this.storageAdapter, cb);
+	}
+
+	editorCloseCallback() {
+		this.currentlyEditing = false;
+		this.editor = undefined;
 	}
 }
 
@@ -50,7 +56,7 @@ export class Manager {
 	}
 
 	render() {
-		if (this.state.currentlyEditing) {
+		if (this.state.currentlyEditing !== false) {
 			this.state.editor!.render();
 		} else {
 			this.menuScreen.render();
@@ -58,7 +64,7 @@ export class Manager {
 	}
 
 	keydown(event: KeyboardEvent) {
-		if (this.state.currentlyEditing) {
+		if (this.state.currentlyEditing !== false) {
 			this.state.editor!.key(event);
 		} else {
 			this.menuScreen.key(event);

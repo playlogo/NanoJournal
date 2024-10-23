@@ -79,9 +79,11 @@ class MenuState {
 				}
 
 				const fileName = this.notes![this.cursorPos.y];
+				this.managerState.openEditor(fileName);
 				break;
 			case 1:
 				// Create a new empty one
+				this.managerState.openEditor();
 				break;
 			case 2:
 				// Search
