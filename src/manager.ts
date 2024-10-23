@@ -1,31 +1,34 @@
 import { Editor } from "./screens/editor.js";
 import { Menu } from "./screens/menu.js";
 
-import { StorageAdapter, StorageAdapterLocal } from "./storage.js";
+import { StorageAdapter, StorageAdapterLocalStorage } from "./storage.js";
 
 export class ManagerState {
 	storageAdapter: StorageAdapter;
-	notes: string[] | undefined;
+	notes: string[] | undefined = undefined;
 
 	editor: Editor | undefined;
 	currentlyEditing: boolean | string = false;
 
 	context: CanvasRenderingContext2D;
 
+	menuScreen: Menu;
+
 	constructor(demo: boolean, context: CanvasRenderingContext2D) {
-		this.notes = undefined;
 		this.context = context;
 
 		if (demo) {
-			this.storageAdapter = new StorageAdapterLocal(demo);
+			this.storageAdapter = new StorageAdapterLocalStorage(demo);
 		} else {
 			throw new Error("Not implemented");
 		}
 
+		this.menuScreen = new Menu(this.context, this);
+
 		// Load notes
 		setTimeout(
 			(() => {
-				this.notes = this.storageAdapter.noteList();
+				this.notes = this.storageAdapter.listNotes();
 			}).bind(this),
 			10
 		);
@@ -46,10 +49,13 @@ export class ManagerState {
 		this.currentlyEditing = false;
 		this.editor = undefined;
 
-		// Reload notes
+		// Reset menu state
+		this.menuScreen.state.cursorPos = { x: 0, y: 0 };
+		this.menuScreen.state.notesScrollPos = 0;
+
 		setTimeout(
 			(() => {
-				this.notes = this.storageAdapter.noteList();
+				this.notes = this.storageAdapter.listNotes();
 			}).bind(this),
 			10
 		);
@@ -58,7 +64,6 @@ export class ManagerState {
 
 export class Manager {
 	state: ManagerState;
-	menuScreen: Menu;
 
 	constructor(context: CanvasRenderingContext2D, demo: boolean) {
 		this.state = new ManagerState(demo, context);
@@ -66,16 +71,13 @@ export class Manager {
 		// Handle keyboard input#
 		const cb = this.keydown.bind(this);
 		window.addEventListener("keydown", cb);
-
-		// Create menuscreen
-		this.menuScreen = new Menu(context, this.state);
 	}
 
 	render() {
 		if (this.state.currentlyEditing !== false) {
 			this.state.editor!.render();
 		} else {
-			this.menuScreen.render();
+			this.state.menuScreen.render();
 		}
 	}
 
@@ -83,7 +85,7 @@ export class Manager {
 		if (this.state.currentlyEditing !== false) {
 			this.state.editor!.key(event);
 		} else {
-			this.menuScreen.key(event);
+			this.state.menuScreen.key(event);
 		}
 	}
 }
