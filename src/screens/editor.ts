@@ -1,4 +1,4 @@
-import { BG, FG } from "./colors.js";
+import { BG, FG } from "../colors.js";
 
 const equals = (one: [number, number], two: [number, number]) => {
 	return one.every((val, index) => val === two[index]);
@@ -48,6 +48,8 @@ class ScreenState {
 	statusStyle: "full" | "middle" = "middle";
 
 	cursorPosition = { x: 0, y: 0 };
+
+	scrollPosition = { x: 0, y: 0 };
 
 	updateStatus() {
 		this.status = `[ ${this.fileName.length == 0 ? "New Buffer" : this.fileName} | ${
@@ -300,7 +302,7 @@ class ScreenStyle {
 	padding = 4;
 }
 
-export class CanvasScreen {
+export class Editor {
 	name: string;
 	context: CanvasRenderingContext2D;
 
@@ -320,29 +322,58 @@ export class CanvasScreen {
 		this.context.fillRect(0, 0, this.context.canvas.width, this.context.canvas.height);
 		this.context.font = this.style.font;
 
+		// Calc possible lines
+		const lines = this._render_calc_lines();
+
 		// Update state
 		this.state.updateStatus();
 
 		// Draw top bar
 		this._render_top_bar();
 
-		// Draw text
-		this._render_buffer();
-
 		// Draw cursor
-		this._render_cursor();
+		this._render_cursor(lines);
+
+		// Draw text
+		this._render_buffer(lines);
 
 		// Render menu at bottom
 		this._render_bottom_menu();
 	}
 
-	_render_cursor() {
+	_render_calc_lines() {
+		const contentHight = this.context.canvas.height - this.style.padding * 2 - 20 - 18 * 2;
+		return Math.floor(contentHight / 18);
+	}
+
+	_render_cursor(lines: number) {
+		// Check if cursor outside of screen
+		if (this.state.cursorPosition.y - this.state.scrollPosition.y >= lines) {
+			// Scroll down
+			this.state.scrollPosition.y += this.state.cursorPosition.y - this.state.scrollPosition.y;
+		} else if (this.state.cursorPosition.y > this.state.scrollPosition.y + lines + 1) {
+			// Scroll up
+			this.state.scrollPosition.y = this.state.cursorPosition.y - lines;
+		}
+
+		// Normalize
+		this.state.scrollPosition.y = Math.max(
+			0,
+			Math.min(this.state.scrollPosition.y - lines + 1, this.state.content.length)
+		);
+
+		// Draw cursor
+		const localCursorPosition = {
+			x: this.state.cursorPosition.x - this.state.scrollPosition.x,
+			y: this.state.cursorPosition.y - this.state.scrollPosition.y,
+		};
+
 		const pos = [
-			this.style.padding + this.state.cursorPosition.x * this.context.measureText(" ").width,
-			this.style.padding + 22 + this.state.cursorPosition.y * 18,
+			this.style.padding + localCursorPosition.x * this.context.measureText(" ").width,
+			this.style.padding + 22 + localCursorPosition.y * 18,
 		];
 
-		if (document.hasFocus()) {
+		if (document.hasFocus() || true) {
 			this.context.fillStyle = FG;
 			this.context.fillRect(pos[0], pos[1], 10, 18);
 
@@ -355,8 +386,13 @@ export class CanvasScreen {
 						this.context.fillStyle = BG;
 						this.context.fillText(
 							this.state.content[this.state.cursorPosition.y][this.state.cursorPosition.x],
-							pos[0],
-							pos[1] + 14
+							this.style.padding +
+								(this.state.scrollPosition.x - this.state.scrollPosition.x) *
+									this.context.measureText(" ").width,
+							this.style.padding +
+								22 +
+								(this.state.scrollPosition.y - this.state.scrollPosition.y) * 18 +
+								14
 						);
 					}
 				}
@@ -370,14 +406,19 @@ export class CanvasScreen {
 		}
 	}
 
-	_render_buffer() {
+	_render_buffer(lines: number) {
+		// Scroll screen
 		this.context.fillStyle = FG;
 
-		for (let i = 0; i < this.state.content.length; i++) {
+		for (
+			let i = this.state.scrollPosition.y;
+			i < lines + this.state.scrollPosition.y && i < this.state.content.length;
+			i++
+		) {
 			this.context.fillText(
 				this.state.content[i],
 				this.style.padding,
-				this.style.padding + 36 + i * this.style.lineHeight
+				this.style.padding + 36 + (i - this.state.scrollPosition.y) * this.style.lineHeight
 			);
 		}
 	}
@@ -539,3 +580,17 @@ export class CanvasScreen {
 		console.log(event.key);
 	}
 }
+
+// Design spec:
+/*
+Padding 4 px
+Top bar 20px
+First line 16px
+Content 18px per line 
+
+[Bar 18px]
+Options 18px
+Options 18px
+Padding 4px
+*/
+//TODO: scrolling

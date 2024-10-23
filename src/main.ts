@@ -1,8 +1,8 @@
-import { CanvasScreen } from "./canvasscreen.js";
+import { Manager } from "./manager.js";
 
-// src/main.ts
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const context = canvas.getContext("2d")!;
+
 // Scale canvas
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -13,16 +13,11 @@ window.addEventListener("resize", () => {
 });
 
 // Simple text writing
-const screen = new CanvasScreen("New Buffer", context);
+const manager = new Manager(context, true);
 
 function renderFrame() {
-	screen.render();
+	manager.render();
 	requestAnimationFrame(renderFrame);
 }
 
 requestAnimationFrame(renderFrame);
-
-// Handle keyboard input
-document.onkeydown = (event) => {
-	screen.key(event);
-};
