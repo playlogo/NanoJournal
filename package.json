@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "concurrently 'tsc -w' 'live-server --watch=dist,index.html'"
+    "build": "tsc && cp public/* dist/",
+    "dev": "concurrently 'tsc -w && cp public/* dist/' 'cd dist/ && live-server --watch=dist,index.html'"
   },
   "author": "",
   "license": "ISC",
