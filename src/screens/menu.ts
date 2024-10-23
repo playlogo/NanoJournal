@@ -1,11 +1,113 @@
 import { BG, FG } from "../colors.js";
-import { logo } from "./resource.js";
+import { ManagerState } from "../manager.js";
+import { logo, icon_plus, icon_search, icon_text_index } from "./resource.js";
+import { equals } from "../utils.js";
+
+class MenuState {
+	cursorPos = { x: 0, y: 0 };
+	notesScrollPos = 0;
+
+	managerState: ManagerState;
+
+	notes: string[] | undefined = undefined;
+
+	constructor(state: ManagerState) {
+		this.managerState = state;
+	}
+
+	moveCursor(direction: [number, number]) {
+		const maxX = 2;
+		const maxY = 10;
+
+		// Move left
+		if (equals(direction, [-1, 0])) {
+			if (this.cursorPos.x === 0) {
+				this.cursorPos.x = maxX;
+			} else {
+				this.cursorPos.x--;
+			}
+		}
+
+		// Move right
+		if (equals(direction, [1, 0])) {
+			if (this.cursorPos.x === maxX) {
+				this.cursorPos.x = 0;
+			} else {
+				this.cursorPos.x++;
+			}
+		}
+
+		// Move up
+		if (equals(direction, [0, 1])) {
+			if (this.cursorPos.y == 0) {
+				this.cursorPos.y = this.notes === undefined ? 0 : this.notes.length - 1;
+			} else {
+				this.cursorPos.y--;
+			}
+		}
+
+		// Move down
+		if (equals(direction, [0, -1])) {
+			if (this.cursorPos.y == (this.notes === undefined ? 0 : this.notes.length - 1)) {
+				this.cursorPos.y = 0;
+			} else {
+				this.cursorPos.y++;
+			}
+		}
+
+		// Scroll down
+		if (this.cursorPos.y - this.notesScrollPos > maxY - 1) {
+			this.notesScrollPos++;
+		}
+
+		// Scroll up
+		if (this.cursorPos.y < this.notesScrollPos) {
+			this.notesScrollPos = this.cursorPos.y;
+		}
+
+		if (this.cursorPos.y - this.notesScrollPos > maxY) {
+			this.notesScrollPos = this.notes === undefined ? 0 : this.notes.length - maxY;
+		}
+	}
+
+	enter() {
+		switch (this.cursorPos.x) {
+			case 0:
+				// Load note
+				if (this.notes === undefined) {
+					return;
+				}
+
+				const fileName = this.notes![this.cursorPos.y];
+				break;
+			case 1:
+				// Create a new empty one
+				break;
+			case 2:
+				// Search
+				// TODO: Implement search
+				break;
+		}
+	}
+}
 
 export class Menu {
 	context: CanvasRenderingContext2D;
+	managerState: ManagerState;
+	state: MenuState;
 
-	constructor(context: CanvasRenderingContext2D) {
+	constructor(context: CanvasRenderingContext2D, state: ManagerState) {
 		this.context = context;
+		this.managerState = state;
+		this.state = new MenuState(state);
+
+		// Load notes
+		setTimeout(
+			(() => {
+				this.state.notes = this.managerState.storageAdapter.noteList();
+			}).bind(this),
+			10
+		);
 	}
 
 	// Draw to the screen
@@ -17,6 +119,12 @@ export class Menu {
 
 		// Render logo
 		this._render_logo();
+
+		// Render notes list
+		this._render_notes_list();
+
+		// Render icons
+		this._render_icons();
 	}
 
 	_render_logo() {
@@ -37,6 +145,124 @@ export class Menu {
 				(this.context.canvas.height - logoHeight - 600) / 2 + i * 18
 			);
 		}
+	}
+
+	_render_notes_list() {
+		// Title text
+		this.context.fillStyle = FG;
+		this.context.fillText(
+			this.state.notes != undefined ? `Notes: ${this.state.notes.length}` : "Loading...",
+			this.context.canvas.width / 2 - 270,
+			this.context.canvas.height / 2 - 220
+		);
+
+		if (this.state.notes === undefined) {
+			return;
+		}
+
+		// Notes list
+		this.context.font = "italic 14px monospace";
+
+		for (
+			let i = this.state.notesScrollPos;
+			i < this.state.notes!.length && i < this.state.notesScrollPos + 10;
+			i++
+		) {
+			if (this.state.cursorPos.y === i && this.state.cursorPos.x === 0) {
+				// Draw rectangle
+				this.context.fillStyle = FG;
+				this.context.fillRect(
+					this.context.canvas.width / 2 - 274,
+					this.context.canvas.height / 2 - 200 + i * 18 - 14 - this.state.notesScrollPos * 18,
+					24 * this.context.measureText(" ").width,
+					18
+				);
+
+				this.context.fillStyle = BG;
+			} else {
+				this.context.fillStyle = FG;
+			}
+
+			this.context.fillText(
+				this.state.notes![i].substring(0, 24),
+				this.context.canvas.width / 2 - 270,
+				this.context.canvas.height / 2 - 200 + i * 18 - this.state.notesScrollPos * 18
+			);
+		}
+
+		return;
+	}
+
+	_render_icons() {
+		this.context.font = "14px monospace";
+
+		const icons = [icon_plus, icon_search];
+
+		for (let icon = 0; icon < icons.length; icon++) {
+			this.context.fillStyle = FG;
+
+			// Draw lines
+			const iconLines = icons[icon].split("\n");
+
+			for (let line = 0; line < iconLines.length; line++) {
+				this.context.fillText(
+					iconLines[line],
+					this.context.canvas.width / 2 + 48 + icon * 130,
+					this.context.canvas.height / 2 - 200 + 18 * line
+				);
+			}
+
+			// Highlight
+			if (this.state.cursorPos.x === icon + 1) {
+				// Draw box
+				this.context.fillStyle = FG;
+				const startPadding =
+					(iconLines[icon_text_index].length - iconLines[icon_text_index].trimStart().length) *
+					this.context.measureText(" ").width;
+
+				this.context.fillRect(
+					this.context.canvas.width / 2 + 48 + icon * 130 + startPadding - 4,
+					this.context.canvas.height / 2 - 200 + 16 * icon_text_index,
+					iconLines[icon_text_index].trim().length * this.context.measureText(" ").width + 8,
+					18
+				);
+
+				// Rewrite text
+				this.context.fillStyle = BG;
+
+				this.context.fillText(
+					iconLines[icon_text_index],
+					this.context.canvas.width / 2 + 48 + icon * 130,
+					this.context.canvas.height / 2 - 200 + 18 * icon_text_index
+				);
+			}
+		}
+	}
+
+	// Handle keyboard input
+	key(event: KeyboardEvent) {
+		// Cursor movement
+		if (["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(event.key)) {
+			this.state.moveCursor(
+				event.key === "ArrowLeft"
+					? [-1, 0]
+					: event.key === "ArrowRight"
+					? [1, 0]
+					: event.key === "ArrowDown"
+					? [0, -1]
+					: event.key === "ArrowUp"
+					? [0, 1]
+					: [0, 0]
+			);
+		}
+
+		// New line - Enter
+		if (event.key === "Enter") {
+			this.state.enter();
+		}
+
+		// Fallback
+		console.log(event.key);
 	}
 
 	// _render_calc_lines() {
@@ -227,56 +453,6 @@ export class Menu {
 	// 			throw new Error("Not implemented");
 	// 	}
 	// }
-
-	// Handle keyboard input
-	key(event: KeyboardEvent) {
-		// // Shortcuts
-		// if (event.ctrlKey) {
-		// 	//this.state.handleCommand("CTL-" + event.key);
-		// }
-
-		// // Cursor movement
-		// if (["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(event.key)) {
-		// 	this.state.moveCursor(
-		// 		event.key === "ArrowLeft"
-		// 			? [-1, 0]
-		// 			: event.key === "ArrowRight"
-		// 			? [1, 0]
-		// 			: event.key === "ArrowDown"
-		// 			? [0, -1]
-		// 			: event.key === "ArrowUp"
-		// 			? [0, 1]
-		// 			: [0, 0],
-		// 		event.ctrlKey
-		// 	);
-		// }
-
-		// // Delete text - Delete
-		// if (event.key === "Delete") {
-		// 	this.state.delete(event.ctrlKey);
-		// }
-
-		// // Delete text - Backspace
-		// if (event.key === "Backspace") {
-		// 	this.state.backspace(event.ctrlKey);
-		// }
-
-		// // New line - Enter
-		// if (event.key === "Enter") {
-		// 	this.state.enter();
-		// }
-
-		// // Normal typing!
-		// // From: https://stackoverflow.com/questions/51296562/how-to-tell-whether-keyboardevent-key-is-a-printable-character-or-control-charac
-		// if (event.key.length == 1 || (event.key.length > 1 && /[^a-zA-Z0-9]/.test(event.key))) {
-		// 	this.state.type(event.key);
-		// } else if (event.key === "Spacebar") {
-		// 	this.state.type(" ");
-		// }
-
-		// Fallback
-		console.log(event.key);
-	}
 }
 
 // Design spec:

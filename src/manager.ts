@@ -3,41 +3,55 @@ import { Menu } from "./screens/menu.js";
 
 import { StorageAdapter, StorageAdapterLocal } from "./storage.js";
 
-class ManagerState {
-	noteNames: string[];
-	currentlyEditing: boolean | string = false;
+export class ManagerState {
 	storageAdapter: StorageAdapter;
+	noteNames: string[];
 
-	constructor(demo: boolean) {
+	editor: Editor | undefined;
+	currentlyEditing: boolean | string = false;
+
+	context: CanvasRenderingContext2D;
+
+	constructor(demo: boolean, context: CanvasRenderingContext2D) {
 		this.noteNames = [];
+		this.context = context;
 
 		if (demo) {
-			this.storageAdapter = new StorageAdapterLocal();
+			this.storageAdapter = new StorageAdapterLocal(demo);
 		} else {
 			throw new Error("Not implemented");
 		}
+	}
+
+	openEditor(noteName?: string) {
+		if (noteName) {
+			this.currentlyEditing = noteName;
+		} else {
+			this.currentlyEditing = "";
+		}
+
+		this.editor = new Editor(this.currentlyEditing, this.context);
 	}
 }
 
 export class Manager {
 	state: ManagerState;
 	menuScreen: Menu;
-	editor: Editor;
 
 	constructor(context: CanvasRenderingContext2D, demo: boolean) {
-		this.state = new ManagerState(demo);
+		this.state = new ManagerState(demo, context);
 
 		// Handle keyboard input#
 		const cb = this.keydown.bind(this);
 		window.addEventListener("keydown", cb);
 
 		// Create menuscreen
-		this.menuScreen = new Menu(context);
+		this.menuScreen = new Menu(context, this.state);
 	}
 
 	render() {
 		if (this.state.currentlyEditing) {
-			this.editor.render();
+			this.state.editor!.render();
 		} else {
 			this.menuScreen.render();
 		}
@@ -45,7 +59,7 @@ export class Manager {
 
 	keydown(event: KeyboardEvent) {
 		if (this.state.currentlyEditing) {
-			this.editor.key(event);
+			this.state.editor!.key(event);
 		} else {
 			this.menuScreen.key(event);
 		}

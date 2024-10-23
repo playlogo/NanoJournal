@@ -10,6 +10,34 @@ export abstract class StorageAdapter {
 }
 
 export class StorageAdapterLocal implements StorageAdapter {
+	constructor(demo: boolean) {
+		if (demo) {
+			if (window.localStorage.getItem("notes") === null) {
+				window.localStorage.setItem(
+					"notes",
+					JSON.stringify([
+						{ creationDate: new Date(), fileName: "demo" },
+						{ creationDate: new Date(), fileName: "demo2" },
+						{ creationDate: new Date(), fileName: "demo3" },
+						{ creationDate: new Date(), fileName: "demo4" },
+						{ creationDate: new Date(), fileName: "demo5" },
+						{ creationDate: new Date(), fileName: "demo6" },
+						{ creationDate: new Date(), fileName: "demo7" },
+						{ creationDate: new Date(), fileName: "demo8" },
+						{ creationDate: new Date(), fileName: "demo9" },
+						{ creationDate: new Date(), fileName: "demo10" },
+						{ creationDate: new Date(), fileName: "demo11" },
+						{ creationDate: new Date(), fileName: "demo12" },
+						{ creationDate: new Date(), fileName: "demo13" },
+						{ creationDate: new Date(), fileName: "demo14" },
+						{ creationDate: new Date(), fileName: "demo15" },
+						{ creationDate: new Date(), fileName: "demo16" },
+					])
+				);
+			}
+		}
+	}
+
 	noteList() {
 		if (window.localStorage.getItem("notes") === null) {
 			return [];

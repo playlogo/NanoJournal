@@ -12,13 +12,15 @@ export const icon_plus = `.---------.
 |    +    |
 |         |
 '---------'
-     New`;
+    New`;
 
 export const icon_search = `.---------.
 |         |
 |   O     |
-|    \    |
-|     \   |
+|    \\    |
+|     \\   |
 |         |
 '---------'
-  Search`;
+   Search`;
+
+export const icon_text_index = 7;
