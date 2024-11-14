@@ -87,13 +87,13 @@ export class Editor {
 		// Draw top bar
 		this._render_top_bar();
 
-		// Draw cursor
-		if (this.state.mode !== ScreenGlobalState.SAVING) {
-			this._render_cursor(lines);
-		}
-
 		// Draw text
 		this._render_buffer(lines);
+
+		// Draw cursor
+		if (this.state.mode === ScreenGlobalState.WRITING) {
+			this._render_cursor(lines);
+		}
 
 		// Render menu at bottom
 		this._render_bottom_menu();
@@ -131,7 +131,7 @@ export class Editor {
 			PADDING + 22 + localCursorPosition.y * LINE_HEIGHT,
 		];
 
-		if (document.hasFocus()) {
+		if (document.hasFocus() || true) {
 			this.context.fillStyle = FG;
 			this.context.fillRect(pos[0], pos[1], 10, LINE_HEIGHT);
 
@@ -144,13 +144,8 @@ export class Editor {
 						this.context.fillStyle = BG;
 						this.context.fillText(
 							this.state.content[this.state.cursorPosition.y][this.state.cursorPosition.x],
-							PADDING +
-								(this.state.scrollPosition.x - this.state.scrollPosition.x) *
-									this.context.measureText(" ").width,
-							PADDING +
-								22 +
-								(this.state.scrollPosition.y - this.state.scrollPosition.y) * LINE_HEIGHT +
-								14
+							pos[0],
+							pos[1] + 14
 						);
 					}
 				}

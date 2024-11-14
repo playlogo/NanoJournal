@@ -144,8 +144,18 @@ export class ScreenModeWriting extends ScreenMode {
 		// Move down
 		if (equals(direction, [0, -1])) {
 			if (screenState.cursorPosition.y === screenState.content.length) {
-				// At the bottom...
 			} else {
+				// At the bottom...
+
+				// Insert bottom line ar end if none
+				if (screenState.content[screenState.content.length - 1].trim() !== "") {
+					screenState.content.push("");
+				} else {
+					if (screenState.cursorPosition.y === screenState.content.length - 1) {
+						return;
+					}
+				}
+
 				screenState.cursorPosition.y += 1;
 
 				// Snap cursor to ending of text if over
@@ -340,6 +350,7 @@ export class ScreenModeExiting extends ScreenMode {
 
 export class ScreenModeSaving extends ScreenMode {
 	fileNameCursorPosition = 0;
+	startFilename: undefined | string = undefined;
 
 	updateStatus(screenState: ScreenState) {
 		screenState.statusStyle = "full";
@@ -352,6 +363,10 @@ export class ScreenModeSaving extends ScreenMode {
 				// Cancel exit
 				screenState.mode = ScreenGlobalState.WRITING;
 				screenState.mode.updateStatus(screenState);
+
+				// Reset filename
+				screenState.fileName = this.startFilename || "";
+				this.startFilename = undefined;
 				return true;
 			default:
 				return false;
@@ -359,8 +374,13 @@ export class ScreenModeSaving extends ScreenMode {
 	}
 
 	type(char: string, screenState: ScreenState) {
+		if (this.startFilename === undefined) {
+			this.startFilename = screenState.fileName;
+		}
+
 		if (screenState.fileName.length === 0) {
 			screenState.fileName = char;
+			this.fileNameCursorPosition = 1;
 			return;
 		}
 
@@ -414,6 +434,7 @@ export class ScreenModeSaving extends ScreenMode {
 	}
 
 	enter(screenState: ScreenState) {
+		this.startFilename = undefined;
 		screenState.storageAdapter.saveNote(screenState.fileName, screenState.content);
 		screenState.closeCallback();
 	}
