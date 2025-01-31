@@ -272,6 +272,6 @@ export class Menu {
 		}
 
 		// Fallback
-		console.log(event.key);
+		//console.log(event.key);
 	}
 }

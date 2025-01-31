@@ -2,8 +2,18 @@ import { Server, serveStatic, redirect, Context, NextFunc } from "https://deno.l
 import { lookup } from "https://deno.land/x/mrmime@v2.0.0/mod.ts";
 
 export default function router_static(server: Server) {
+	server.get("/", redirect("/index.html"));
+	server.get("", redirect("/index.html"));
+
 	server.get("/*", serveStatic("./dist"), async (ctx: Context, next: NextFunc) => {
 		const ext = ctx.req.url.match(/\.(?<ext>[^.]*?)(?=\?|#|$)/)![1];
+		const url = new URL(ctx.req.url);
+
+		if (url.pathname === "/") {
+			ctx.redirect("/index.html");
+			await next();
+			return;
+		}
 
 		if (ext) {
 			const stats = await Deno.stat(`${Deno.cwd()}/dist/${new URL(ctx.req.url).pathname}`);
@@ -17,7 +27,4 @@ export default function router_static(server: Server) {
 
 		await next();
 	});
-
-	server.get("/", redirect("/index.html"));
-	server.get("", redirect("/index.html"));
 }

@@ -153,8 +153,8 @@ export class Editor {
 					}
 				}
 			} catch {
-				console.log(JSON.stringify(this.state.cursorPosition));
-				console.log(JSON.stringify(this.state.content));
+				console.error(JSON.stringify(this.state.cursorPosition));
+				console.error(JSON.stringify(this.state.content));
 			}
 		} else {
 			this.context.strokeStyle = FG;
@@ -538,7 +538,7 @@ export class Editor {
 		}
 
 		// Fallback
-		console.log(event.key);
+		//console.log(event.key);
 	}
 }
 

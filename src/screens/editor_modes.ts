@@ -41,10 +41,8 @@ export class ScreenModeWriting extends ScreenMode {
 
 					// Copy selection
 					navigator.clipboard.writeText(text).then(
-						function () {
-							console.log("Async: Copying to clipboard was successful!");
-						},
-						function (err) {
+						() => {},
+						(err) => {
 							console.error("Async: Could not copy text: ", err);
 						}
 					);
@@ -60,10 +58,8 @@ export class ScreenModeWriting extends ScreenMode {
 
 					// Copy selection
 					navigator.clipboard.writeText(text).then(
-						function () {
-							console.log("Async: Copying to clipboard was successful!");
-						},
-						function (err) {
+						() => {},
+						(err) => {
 							console.error("Async: Could not copy text: ", err);
 						}
 					);
@@ -77,6 +73,8 @@ export class ScreenModeWriting extends ScreenMode {
 					// Empty selection
 					this.#emptySelection(screenState);
 				}
+
+				throw new Error("Not implemented");
 				return true;
 			case "CTL-r":
 				window.location.reload();
@@ -263,7 +261,6 @@ export class ScreenModeWriting extends ScreenMode {
 		}
 
 		if (shift) {
-			console.log("hst");
 			if (screenState.selection === undefined) {
 				selection!.end = {
 					x: screenState.cursorPosition.x + 1,

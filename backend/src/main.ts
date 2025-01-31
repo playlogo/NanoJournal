@@ -22,4 +22,8 @@ router_notes(server);
 router_static(server);
 
 // Listen!
+if (Deno.env.get("DEMO") === "true") {
+	console.log("[main] DEMO MODE");
+}
+
 await server.listen({ port: 8000 });

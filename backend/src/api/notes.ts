@@ -15,6 +15,7 @@ export default function router_notes(server: Server) {
 		if (Deno.env.get("DEMO") === "true") {
 			ctx.res.body = { error: "Saving files is disable in this demo environment" };
 			ctx.res.status = 500;
+			return;
 		}
 
 		try {
