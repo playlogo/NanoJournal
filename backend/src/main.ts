@@ -32,8 +32,6 @@ server.post("/tags/:id", res("json"), req("json"), async (ctx: any, next: any) =
 - Store memos in db
 - Ability to store assets
 
-
-
 - Provide a exporter util to export them to files
 
 */
@@ -42,9 +40,8 @@ server.post("/tags/:id", res("json"), req("json"), async (ctx: any, next: any) =
 - Daily notes -> Calender view
 - Normal notes
 - Tags for day
-
-
 */
+
 /* Tags
 - /tags: List user tags, stored for day (optional prop day)
 - POST /tags/:id Add tag to day (optional prop day)

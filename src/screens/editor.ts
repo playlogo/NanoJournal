@@ -75,8 +75,9 @@ export class Editor {
 	render() {
 		// Clear the screen
 		this.context.fillStyle = BG;
-		this.context.fillRect(0, 0, this.context.canvas.width, this.context.canvas.height);
+		this.context.clearRect(0, 0, this.context.canvas.width, this.context.canvas.height);
 		this.context.font = FONT_NORMAL;
+		this.context.beginPath();
 
 		// Calc possible lines
 		const lines = this._render_calc_lines();
@@ -131,7 +132,7 @@ export class Editor {
 			PADDING + 22 + localCursorPosition.y * LINE_HEIGHT,
 		];
 
-		if (document.hasFocus() || true) {
+		if (document.hasFocus()) {
 			this.context.fillStyle = FG;
 			this.context.fillRect(pos[0], pos[1], 10, LINE_HEIGHT);
 
@@ -163,11 +164,72 @@ export class Editor {
 		// Scroll screen
 		this.context.fillStyle = FG;
 
+		const tag_colors: { [key: string]: string } = {
+			home: "#8bd4a1",
+			school: "#f59153",
+			fallback: "#d34a4f",
+			log: "#d9ceec",
+		};
+
 		for (
 			let i = this.state.scrollPosition.y;
 			i < lines + this.state.scrollPosition.y && i < this.state.content.length;
 			i++
 		) {
+			// Extract tags
+			let content = this.state.content[i];
+			const CHARACTER_WIDTH = this.context.measureText(" ").width;
+
+			while (true) {
+				// Replace each tag one by one
+				const regex = /(.*)#([\w]+)/g;
+
+				let m;
+				let ran = false;
+
+				while ((m = regex.exec(content)) !== null) {
+					if (m.index === regex.lastIndex) {
+						regex.lastIndex++;
+					}
+
+					ran = true;
+
+					const character_offset = m[1].length;
+					const tag = m[2];
+					let color: string = tag_colors[tag];
+
+					if (!color) {
+						color = tag_colors["fallback"];
+					}
+
+					this.context.fillStyle = color;
+					this.context.roundRect(
+						PADDING - 2 + character_offset * CHARACTER_WIDTH,
+						36 + (i - this.state.scrollPosition.y) * LINE_HEIGHT - 10,
+						tag.length * CHARACTER_WIDTH + 16,
+						LINE_HEIGHT + 2,
+						4
+					);
+					this.context.fill();
+
+					// Replace in content
+					content =
+						content.slice(0, character_offset) +
+						" ".repeat(tag.length) +
+						content.slice(character_offset + tag.length + 1);
+				}
+
+				if (!ran) {
+					break;
+				}
+			}
+
+			// Replace all origin tags
+			const regex = /#([\w]+)/gm;
+			content = content.replace(regex, `    `);
+
+			this.context.fillStyle = "white";
+
 			this.context.fillText(
 				this.state.content[i],
 				PADDING,

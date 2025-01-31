@@ -51,8 +51,7 @@ export class ScreenModeWriting extends ScreenMode {
 				} else {
 					// Move cursor to end of prev line
 					screenState.cursorPosition.y -= 1;
-					screenState.cursorPosition.x =
-						screenState.content[screenState.cursorPosition.y].length + 1;
+					screenState.cursorPosition.x = screenState.content[screenState.cursorPosition.y].length;
 				}
 			} else {
 				if (ctrl) {
@@ -99,6 +98,12 @@ export class ScreenModeWriting extends ScreenMode {
 					screenState.cursorPosition.x = 0;
 					screenState.cursorPosition.y += 1;
 				}
+			} else if (
+				screenState.cursorPosition.x === screenState.content[screenState.cursorPosition.y].length
+			) {
+				// Move cursor to start of next line
+				screenState.cursorPosition.x = 0;
+				screenState.cursorPosition.y += 1;
 			} else {
 				if (ctrl) {
 					let wasSpace = false;
