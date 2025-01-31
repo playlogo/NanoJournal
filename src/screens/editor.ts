@@ -23,16 +23,7 @@ export class ScreenState {
 	cursorPosition = { x: 0, y: 0 };
 	scrollPosition = { x: 0, y: 0 };
 
-	selection: undefined | { start: { x: number; y: number }; end: { x: number; y: number } } = {
-		start: {
-			x: 4,
-			y: 4,
-		},
-		end: {
-			x: 10,
-			y: 6,
-		},
-	};
+	selection: undefined | { start: { x: number; y: number }; end: { x: number; y: number } } = undefined;
 
 	storageAdapter: StorageAdapter;
 	closeCallback: () => void;
