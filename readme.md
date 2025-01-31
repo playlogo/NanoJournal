@@ -15,9 +15,9 @@ This projects tries to eventually achieve all 4 things.
 
 ## Current State
 
-Currently the project is in an super early prototype state.
-It was written in 2 Days during a School week, totaling to 7 hours.
-It lacks most of the advanced features listed above, but should demonstrate easy of use!
+Currently the project is in an early prototype state.
+It was written in 3 Days, totaling to ~14 hours.
+It lacks most of the advanced features you would expect from a text editor, but should demonstrate the easy of use and my goal!
 
 ## Roadmap
 
@@ -35,5 +35,5 @@ It lacks most of the advanced features listed above, but should demonstrate easy
 
 ## Screenshots
 
-![Menu screen](doc/menu.png)
-![Editor screen](doc/editor.png)
+![Menu screen](https://raw.githubusercontent.com/playlogo/NanoJournal/refs/heads/master/doc/editor.png)
+![Editor screen](https://raw.githubusercontent.com/playlogo/NanoJournal/refs/heads/master/doc/menu.png)
