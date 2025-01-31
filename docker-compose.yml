@@ -7,5 +7,7 @@ services:
         build: .
         volumes:
             - ./data:/app/data
+        environment:
+            - DEMO=$DEMO
         ports:
             - "8000:8000"

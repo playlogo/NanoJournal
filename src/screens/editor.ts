@@ -1,5 +1,5 @@
 import { BG, FG, FONT_NORMAL, LINE_HEIGHT, PADDING } from "../style.js";
-import { StorageAdapter } from "../storage.js";
+import { Note, StorageAdapter } from "../storage.js";
 import { cyrb53 } from "../utils.js";
 import { ScreenModeWriting, ScreenModeExiting, ScreenModeSaving } from "./editor_modes.js";
 
@@ -13,7 +13,7 @@ export const ScreenGlobalState = {
 export class ScreenState {
 	mode: any = ScreenGlobalState.WRITING;
 
-	fileName = "";
+	note: Note;
 	content: string[] = [""];
 	initialHash = 0;
 
@@ -37,16 +37,16 @@ export class ScreenState {
 	storageAdapter: StorageAdapter;
 	closeCallback: () => void;
 
-	constructor(fileName: string, storageAdapter: StorageAdapter, closeCallback: () => void) {
-		this.fileName = fileName;
+	constructor(note: Note, storageAdapter: StorageAdapter, closeCallback: () => void) {
+		this.note = note;
 
 		this.storageAdapter = storageAdapter;
 		this.closeCallback = closeCallback;
 
-		if (fileName.length > 0) {
+		if (this.note.filename.length > 0) {
 			setTimeout(async () => {
 				try {
-					this.content = await this.storageAdapter.loadNote(this.fileName);
+					this.content = await this.storageAdapter.loadNote(this.note!.id);
 				} catch {
 					this.content = ["Error: File not found"];
 				}
@@ -57,29 +57,29 @@ export class ScreenState {
 
 	updateStatus() {
 		if (this.mode === ScreenGlobalState.WRITING) {
-			this.status = `[ ${this.fileName.length == 0 ? "New Buffer" : this.fileName} | ${
+			this.status = `[ ${this.note!.filename.length == 0 ? "New Buffer" : this.note!.filename} | ${
 				this.content.length
-			} lines ]`;
+			} ${this.content.length === 1 ? "line" : "lines"} ]`;
 		}
 	}
 }
 
 export class Editor {
-	name: string;
+	note: Note;
 	context: CanvasRenderingContext2D;
 
 	state: ScreenState;
 
 	constructor(
-		name: string,
+		note: Note,
 		context: CanvasRenderingContext2D,
 		storageAdapter: StorageAdapter,
 		closeCallback: () => void
 	) {
-		this.name = name;
+		this.note = note;
 		this.context = context;
 
-		this.state = new ScreenState(this.name, storageAdapter, closeCallback);
+		this.state = new ScreenState(this.note, storageAdapter, closeCallback);
 	}
 
 	// Draw to the screen
@@ -327,8 +327,8 @@ export class Editor {
 		// Filename
 		this.context.fillStyle = BG;
 		this.context.fillText(
-			this.name.length > 0 ? this.name : "New Buffer",
-			(this.context.canvas.width - this.name.length * 14) / 2,
+			this.note.filename.length > 0 ? this.note.filename : "New Buffer",
+			(this.context.canvas.width - this.note.filename.length * 14) / 2,
 			20
 		);
 	}
@@ -436,7 +436,7 @@ export class Editor {
 				this.context.fillStyle = BG;
 
 				this.context.fillText(
-					prefix + this.state.fileName,
+					prefix + this.state.note?.filename,
 					PADDING,
 					this.context.canvas.height - PADDING - LINE_HEIGHT - 22
 				);
@@ -454,7 +454,7 @@ export class Editor {
 				// Redraw character
 				this.context.fillStyle = FG;
 				this.context.fillText(
-					this.state.fileName[this.state.mode.fileNameCursorPosition!] ?? " ",
+					this.state.note?.filename[this.state.mode.fileNameCursorPosition!] ?? " ",
 					PADDING +
 						(prefix.length + this.state.mode.fileNameCursorPosition!) *
 							this.context.measureText(" ").width,

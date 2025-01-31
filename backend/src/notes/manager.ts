@@ -15,7 +15,7 @@ class Manager {
 	}
 
 	async loadNote(id: string) {
-		const content = (await Deno.readTextFile(`data/notes/${id}`)).split("\n");
+		const content = (await Deno.readTextFile(`data/notes/${id}.txt`)).split("\n");
 		return content;
 	}
 
@@ -28,7 +28,7 @@ class Manager {
 			await Deno.mkdir("data/notes", { recursive: true });
 		}
 
-		await Deno.writeTextFile(`data/notes/${id}`, content.join("\n"));
+		await Deno.writeTextFile(`data/notes/${id}.txt`, content.join("\n"));
 
 		// Update database
 		const noteExists = Database.db!.query("SELECT filename FROM notes WHERE id = ?", [id]);

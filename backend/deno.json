@@ -1,7 +1,7 @@
 {
     "tasks": {
-        "dev": "deno run --watch --allow-net --allow-read --allow-write src/main.ts",
-        "run": "deno run --allow-net --allow-read --allow-write src/main.ts",
+        "dev": "deno run --watch --allow-net --allow-read --allow-env --allow-write src/main.ts",
+        "run": "deno run --allow-net --allow-read --allow-write --allow-env src/main.ts",
         "cache": "deno cache src/main.ts"
     }
 }

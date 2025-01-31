@@ -1,15 +1,15 @@
-interface Note {
-	creationDate: Date;
-	lastEditDate: Date;
-	fileName: string;
+export interface Note {
+	creationDate: number;
+	lastEditDate: number;
+	filename: string;
 
 	id: string;
 }
 
 export abstract class StorageAdapter {
-	abstract listNotes(): Promise<string[]>;
+	abstract listNotes(): Promise<Note[]>;
 	abstract loadNote(id: string): Promise<string[]>;
-	abstract saveNote(id: string, fileName: string, content: string[]): Promise<void>;
+	abstract saveNote(note: Note, content: string[]): Promise<void>;
 }
 
 export class StorageAdapterLocalStorage implements StorageAdapter {
@@ -46,9 +46,9 @@ export class StorageAdapterLocalStorage implements StorageAdapter {
 			return [];
 		}
 
-		return (JSON.parse(window.localStorage.getItem("notes")!) as Note[])
-			.sort((a, b) => (a.lastEditDate > b.lastEditDate ? -1 : 1))
-			.map((note) => note.fileName);
+		return (JSON.parse(window.localStorage.getItem("notes")!) as Note[]).sort((a, b) =>
+			a.lastEditDate > b.lastEditDate ? -1 : 1
+		);
 	}
 
 	async loadNote(id: string) {
@@ -59,7 +59,10 @@ export class StorageAdapterLocalStorage implements StorageAdapter {
 		return JSON.parse(window.localStorage.getItem(`note_${id}`)!) as string[];
 	}
 
-	async saveNote(id: string, fileName: string, content: string[]) {
+	async saveNote(note: Note, content: string[]) {
+		throw new Error("Not implemented");
+		/*
+
 		const notes = JSON.parse(window.localStorage.getItem("notes")!) as Note[];
 
 		if (fileName === "") {
@@ -89,6 +92,7 @@ export class StorageAdapterLocalStorage implements StorageAdapter {
 			note!.lastEditDate = new Date();
 			window.localStorage.setItem("notes", JSON.stringify(notes));
 		}
+			*/
 	}
 }
 
@@ -101,37 +105,37 @@ export class StorageAdapterRemote implements StorageAdapter {
 
 		this.lastNoteList = body;
 
-		return body.sort((a, b) => (a.lastEditDate > b.lastEditDate ? -1 : 1)).map((note) => note.fileName);
+		return body.sort((a, b) => (a.lastEditDate > b.lastEditDate ? -1 : 1));
 	}
 
 	async loadNote(id: string) {
 		const res = await fetch(`/api/notes/${id}`);
-		const body = await res.json();
+		const body = (await res.json()).content;
 
 		return body as string[];
 	}
 
-	async saveNote(id: string, fileName: string, content: string[]) {
-		if (fileName === "") {
+	async saveNote(note: Note, content: string[]) {
+		if (note.filename === "") {
 			// Find next free untitled name
 			const nextId =
 				this.lastNoteList
-					.filter((note) => note.fileName.startsWith("Untitled"))
+					.filter((note) => note.filename.startsWith("Untitled"))
 					.map((note) => {
-						return parseInt(note.fileName.replace("Untitled", ""));
+						return parseInt(note.filename.replace("Untitled", ""));
 					})
 					.sort((a, b) => (a > b ? 1 : -1))[0] + 1;
 
-			fileName = "Untitled" + nextId;
+			note.filename = `Untitled${isNaN(nextId) ? 0 : nextId}`;
 		}
 
-		const res = await fetch(`/api/notes/${fileName}`, {
+		const res = await fetch(`/api/notes`, {
 			method: "POST",
 			headers: {
 				Accept: "application/json",
 				"Content-Type": "application/json",
 			},
-			body: JSON.stringify({ id: id, fileName: fileName, content }),
+			body: JSON.stringify({ id: note.id, filename: note.filename, content }),
 		});
 
 		if (!res.ok) {

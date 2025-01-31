@@ -424,7 +424,11 @@ export class ScreenModeWriting extends ScreenMode {
 	type(char: string, screenState: ScreenState) {
 		if (screenState.selection !== undefined) {
 			// Empty selection
-			this.#emptySelection(screenState);
+			try {
+				this.#emptySelection(screenState);
+			} catch (_err) {
+				// Can happen
+			}
 		}
 
 		// Insert the char before cursor position
@@ -565,7 +569,7 @@ export class ScreenModeSaving extends ScreenMode {
 
 	updateStatus(screenState: ScreenState) {
 		screenState.statusStyle = "full";
-		this.fileNameCursorPosition = screenState.fileName.length;
+		this.fileNameCursorPosition = screenState.note.filename.length;
 	}
 
 	handleCommand(command: string, screenState: ScreenState): boolean {
@@ -576,7 +580,7 @@ export class ScreenModeSaving extends ScreenMode {
 				screenState.mode.updateStatus(screenState);
 
 				// Reset filename
-				screenState.fileName = this.startFilename || "";
+				screenState.note.filename = this.startFilename || "";
 				this.startFilename = undefined;
 				return true;
 			default:
@@ -586,19 +590,19 @@ export class ScreenModeSaving extends ScreenMode {
 
 	type(char: string, screenState: ScreenState) {
 		if (this.startFilename === undefined) {
-			this.startFilename = screenState.fileName;
+			this.startFilename = screenState.note.filename;
 		}
 
-		if (screenState.fileName.length === 0) {
-			screenState.fileName = char;
+		if (screenState.note.filename.length === 0) {
+			screenState.note.filename = char;
 			this.fileNameCursorPosition = 1;
 			return;
 		}
 
-		const start = screenState.fileName.slice(0, this.fileNameCursorPosition);
-		const end = screenState.fileName.slice(this.fileNameCursorPosition);
+		const start = screenState.note.filename.slice(0, this.fileNameCursorPosition);
+		const end = screenState.note.filename.slice(this.fileNameCursorPosition);
 
-		screenState.fileName = start + char + end;
+		screenState.note.filename = start + char + end;
 		this.fileNameCursorPosition += 1;
 	}
 
@@ -607,7 +611,7 @@ export class ScreenModeSaving extends ScreenMode {
 			this.fileNameCursorPosition = Math.max(0, this.fileNameCursorPosition - 1);
 		} else if (equals(direction, [1, 0])) {
 			this.fileNameCursorPosition = Math.min(
-				screenState.fileName.length,
+				screenState.note.filename.length,
 				this.fileNameCursorPosition + 1
 			);
 		}
@@ -616,37 +620,37 @@ export class ScreenModeSaving extends ScreenMode {
 			if (equals(direction, [-1, 0])) {
 				this.fileNameCursorPosition = 0;
 			} else if (equals(direction, [1, 0])) {
-				this.fileNameCursorPosition = screenState.fileName.length;
+				this.fileNameCursorPosition = screenState.note.filename.length;
 			}
 		}
 	}
 
 	delete(ctrl: boolean, screenState: ScreenState) {
-		if (screenState.fileName.length === 0) {
+		if (screenState.note.filename.length === 0) {
 			return;
 		}
 
-		const start = screenState.fileName.slice(0, this.fileNameCursorPosition);
-		const end = screenState.fileName.slice(this.fileNameCursorPosition + 1);
+		const start = screenState.note.filename.slice(0, this.fileNameCursorPosition);
+		const end = screenState.note.filename.slice(this.fileNameCursorPosition + 1);
 
-		screenState.fileName = start + end;
+		screenState.note.filename = start + end;
 	}
 
 	backspace(ctrl: boolean, screenState: ScreenState) {
-		if (screenState.fileName.length === 0) {
+		if (screenState.note.filename.length === 0) {
 			return;
 		}
 
-		const start = screenState.fileName.slice(0, this.fileNameCursorPosition - 1);
-		const end = screenState.fileName.slice(this.fileNameCursorPosition);
+		const start = screenState.note.filename.slice(0, this.fileNameCursorPosition - 1);
+		const end = screenState.note.filename.slice(this.fileNameCursorPosition);
 
-		screenState.fileName = start + end;
+		screenState.note.filename = start + end;
 		this.fileNameCursorPosition = Math.max(0, this.fileNameCursorPosition - 1);
 	}
 
 	enter(screenState: ScreenState) {
 		this.startFilename = undefined;
-		screenState.storageAdapter.saveNote(screenState.fileName, screenState.content);
+		screenState.storageAdapter.saveNote(screenState.note, screenState.content);
 		screenState.closeCallback();
 	}
 }

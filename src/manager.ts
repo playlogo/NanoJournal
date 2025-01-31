@@ -1,14 +1,15 @@
 import { Editor } from "./screens/editor.js";
 import { Menu } from "./screens/menu.js";
 
-import { StorageAdapter, StorageAdapterLocalStorage, StorageAdapterRemote } from "./storage.js";
+import { Note, StorageAdapter, StorageAdapterLocalStorage, StorageAdapterRemote } from "./storage.js";
+import { generateUUID } from "./utils.js";
 
 export class ManagerState {
 	storageAdapter: StorageAdapter;
-	notes: string[] | undefined = undefined;
+	notes: Note[] | undefined = undefined;
 
 	editor: Editor | undefined;
-	currentlyEditing: boolean | string = false;
+	currentlyEditing: Note | undefined = undefined;
 
 	context: CanvasRenderingContext2D;
 
@@ -30,23 +31,28 @@ export class ManagerState {
 			(async () => {
 				this.notes = await this.storageAdapter.listNotes();
 			}).bind(this),
-			1000
+			10
 		);
 	}
 
-	openEditor(noteName?: string) {
-		if (noteName) {
-			this.currentlyEditing = noteName;
+	openEditor(note?: Note) {
+		if (note) {
+			this.currentlyEditing = note;
 		} else {
-			this.currentlyEditing = "";
+			this.currentlyEditing = {
+				id: generateUUID(),
+				filename: "",
+				creationDate: Date.now(),
+				lastEditDate: Date.now(),
+			};
 		}
 
 		const cb = this.editorCloseCallback.bind(this);
-		this.editor = new Editor(this.currentlyEditing, this.context, this.storageAdapter, cb);
+		this.editor = new Editor(this.currentlyEditing!, this.context, this.storageAdapter, cb);
 	}
 
 	editorCloseCallback() {
-		this.currentlyEditing = false;
+		this.currentlyEditing = undefined;
 		this.editor = undefined;
 
 		// Reset menu state
@@ -57,7 +63,7 @@ export class ManagerState {
 			(async () => {
 				this.notes = await this.storageAdapter.listNotes();
 			}).bind(this),
-			1000
+			10
 		);
 	}
 }
@@ -74,7 +80,7 @@ export class Manager {
 	}
 
 	render() {
-		if (this.state.currentlyEditing !== false) {
+		if (this.state.currentlyEditing !== undefined) {
 			this.state.editor!.render();
 		} else {
 			this.state.menuScreen.render();
@@ -82,7 +88,7 @@ export class Manager {
 	}
 
 	keydown(event: KeyboardEvent) {
-		if (this.state.currentlyEditing !== false) {
+		if (this.state.currentlyEditing !== undefined) {
 			this.state.editor!.key(event);
 		} else {
 			this.state.menuScreen.key(event);

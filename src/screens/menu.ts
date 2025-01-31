@@ -81,8 +81,8 @@ class MenuState {
 					return;
 				}
 
-				const fileName = this.managerState.notes![this.cursorPos.y];
-				this.managerState.openEditor(fileName);
+				const note = this.managerState.notes![this.cursorPos.y];
+				this.managerState.openEditor(note);
 				break;
 			case 1:
 				// Create a new empty one
@@ -190,7 +190,7 @@ export class Menu {
 			}
 
 			this.context.fillText(
-				this.state.managerState.notes![i].substring(0, 24),
+				this.state.managerState.notes![i].filename.substring(0, 24),
 				this.context.canvas.width / 2 - 270,
 				this.context.canvas.height / 2 -
 					100 +

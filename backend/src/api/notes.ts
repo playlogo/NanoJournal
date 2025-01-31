@@ -6,24 +6,28 @@ export default function router_notes(server: Server) {
 	// List notes
 	server.get("/api/notes", res("json"), async (ctx: Context, next: NextFunc) => {
 		ctx.res.body = await NotesManager.listNotes();
-
-		await next();
+		ctx.res.status = 200;
 	});
 
 	// Upload a note
 	server.post("/api/notes", res("json"), req("json"), async (ctx: Context, next: NextFunc) => {
+		// Demo mode
+		if (Deno.env.get("DEMO") === "true") {
+			ctx.res.body = { error: "Saving files is disable in this demo environment" };
+			ctx.res.status = 500;
+		}
+
 		try {
 			const id = await NotesManager.saveNote(ctx.body.filename, ctx.body.id, ctx.body.content);
 
 			ctx.res.body = { id: id };
+			ctx.res.status = 200;
 		} catch (err) {
 			ctx.res.status = 500;
 			ctx.res.statusText = `${err}`;
 
 			console.error(err);
 		}
-
-		await next();
 	});
 
 	// Load note
@@ -32,6 +36,7 @@ export default function router_notes(server: Server) {
 			let content = await NotesManager.loadNote(ctx.params.id);
 
 			ctx.res.body = { content: content };
+			ctx.res.status = 200;
 		} catch (err) {
 			ctx.res.status = 500;
 			ctx.res.statusText = `${err}`;
@@ -40,7 +45,5 @@ export default function router_notes(server: Server) {
 				console.error(err);
 			}
 		}
-
-		await next();
 	});
 }

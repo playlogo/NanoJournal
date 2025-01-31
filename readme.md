@@ -21,11 +21,17 @@ It lacks most of the advanced features listed above, but should demonstrate easy
 
 ## Roadmap
 
-- Scrolling (quite the basic feature, right ?)
-- Syncing across devices (A deno.js backend server with sqlite)
-- A mobile friendly interface
+- [x] Scrolling (quite the basic feature, right ?)
+- [ ] Syncing across devices (A deno.js backend server with sqlite)
+  - [x] Deno backend
+  - [ ] Rewrite frontend file handling
+- [ ] Tags
+  - [x] Frontend support
+  - [ ] Backend support
+- [ ] Bug fixes
+  - [ ] Text selection
 - Mouse support
-- Bug fixes
+- [x] A mobile friendly interface (as long as you use a keyboard :D)
 
 ## Screenshots
 

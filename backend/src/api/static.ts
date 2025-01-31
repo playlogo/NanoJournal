@@ -19,4 +19,5 @@ export default function router_static(server: Server) {
 	});
 
 	server.get("/", redirect("/index.html"));
+	server.get("", redirect("/index.html"));
 }
