@@ -23,6 +23,17 @@ export class ScreenState {
 	cursorPosition = { x: 0, y: 0 };
 	scrollPosition = { x: 0, y: 0 };
 
+	selection: undefined | { start: { x: number; y: number }; end: { x: number; y: number } } = {
+		start: {
+			x: 4,
+			y: 4,
+		},
+		end: {
+			x: 10,
+			y: 6,
+		},
+	};
+
 	storageAdapter: StorageAdapter;
 	closeCallback: () => void;
 
@@ -161,6 +172,8 @@ export class Editor {
 	}
 
 	_render_buffer(lines: number) {
+		const CHARACTER_WIDTH = this.context.measureText(" ").width;
+
 		// Scroll screen
 		this.context.fillStyle = FG;
 
@@ -178,7 +191,6 @@ export class Editor {
 		) {
 			// Extract tags
 			let content = this.state.content[i];
-			const CHARACTER_WIDTH = this.context.measureText(" ").width;
 
 			while (true) {
 				// Replace each tag one by one
@@ -203,6 +215,7 @@ export class Editor {
 					}
 
 					this.context.fillStyle = color;
+					this.context.beginPath();
 					this.context.roundRect(
 						PADDING - 2 + character_offset * CHARACTER_WIDTH,
 						36 + (i - this.state.scrollPosition.y) * LINE_HEIGHT - 10,
@@ -235,6 +248,74 @@ export class Editor {
 				PADDING,
 				PADDING + 36 + (i - this.state.scrollPosition.y) * LINE_HEIGHT
 			);
+		}
+
+		// Draw Selection
+		if (this.state.selection) {
+			this.context.beginPath();
+
+			const selection: typeof this.state.selection = JSON.parse(JSON.stringify(this.state.selection));
+
+			// Flip them if required
+			let flip = false;
+
+			if (selection.end.y < selection.start.y) {
+				flip = true;
+			}
+			if (selection.start.y === selection.end.y && selection.end.x < selection.start.x) {
+				flip = true;
+			}
+
+			if (flip) {
+				selection.end = this.state.selection.start;
+				selection.start = this.state.selection.end;
+			}
+
+			for (let i = selection.start.y; i <= selection.end.y; i++) {
+				if (i < this.state.scrollPosition.y) {
+					continue;
+				}
+
+				// Draw rectangle
+				const startScreenPosition = {
+					x: Math.max(
+						0,
+						selection.start.y === i ? selection.start.x - this.state.scrollPosition.x : 0
+					),
+					y: Math.max(0, selection.start.y - this.state.scrollPosition.y),
+				};
+
+				const pos = [
+					PADDING + startScreenPosition.x * this.context.measureText(" ").width,
+					PADDING + 22 + i * LINE_HEIGHT,
+				];
+
+				console.log(i, startScreenPosition, pos);
+
+				const selectionLength =
+					selection.end.y === i
+						? selection.end.x - selection.start.x - this.state.scrollPosition.x
+						: this.state.content[i]?.length
+						? this.state.content[i]?.length
+						: 0;
+
+				this.context.fillStyle = FG;
+				this.context.fillRect(pos[0], pos[1], selectionLength * CHARACTER_WIDTH, LINE_HEIGHT);
+
+				// Redraw text
+				this.context.fillStyle = BG;
+
+				let content = this.state.content[i] ? this.state.content[i] : "";
+
+				content = (selection.start.y === i ? content.slice(selection.start.x) : content).slice(
+					0,
+					selection.end.y === i ? selectionLength : undefined
+				);
+
+				this.context.fillText(content, pos[0], pos[1] + 14);
+			}
+
+			this.context.fill();
 		}
 	}
 
@@ -405,6 +486,7 @@ export class Editor {
 					? [0, 1]
 					: [0, 0],
 				event.ctrlKey,
+				event.shiftKey,
 				this.state
 			);
 		}

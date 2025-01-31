@@ -5,7 +5,7 @@ export abstract class ScreenMode {
 	abstract handleCommand(command: string, screenState: ScreenState): boolean;
 	updateStatus(screenState: ScreenState) {}
 
-	moveCursor(direction: [number, number], ctrl: boolean, screenState: ScreenState) {}
+	moveCursor(direction: [number, number], ctrl: boolean, shift: boolean, screenState: ScreenState) {}
 	delete(ctrl: boolean, screenState: ScreenState) {}
 	backspace(ctrl: boolean, screenState: ScreenState) {}
 	enter(screenState: ScreenState) {}
@@ -41,146 +41,197 @@ export class ScreenModeWriting extends ScreenMode {
 		}
 	}
 
-	moveCursor(direction: [number, number], ctrl: boolean, screenState: ScreenState) {
-		// Move to left
-		if (equals(direction, [-1, 0])) {
-			// Start of line
-			if (screenState.cursorPosition.x === 0) {
-				if (screenState.cursorPosition.y === 0) {
-					// Can't go any further
-				} else {
-					// Move cursor to end of prev line
-					screenState.cursorPosition.y -= 1;
-					screenState.cursorPosition.x = screenState.content[screenState.cursorPosition.y].length;
-				}
-			} else {
-				if (ctrl) {
-					screenState.cursorPosition.x -= 2;
+	moveCursor(direction: [number, number], ctrl: boolean, shift: boolean, screenState: ScreenState) {
+		let selection: { start: { x: number; y: number }; end: { x: number; y: number } } | undefined =
+			undefined;
 
-					// Jump whole word
-					while (true) {
-						// Check if at start
-						if (screenState.cursorPosition.x <= 0) {
-							break;
-						}
-
-						if (
-							screenState.content[screenState.cursorPosition.y][
-								screenState.cursorPosition.x
-							] === " "
-						) {
-							screenState.cursorPosition.x += 1;
-
-							break;
-						}
-
-						screenState.cursorPosition.x -= 1;
-					}
-				} else {
-					screenState.cursorPosition.x -= 1;
-				}
-			}
-
-			return;
+		if (shift && screenState.selection === undefined) {
+			selection = {
+				start: {
+					x: screenState.cursorPosition.x,
+					y: screenState.cursorPosition.y,
+				},
+				end: {
+					x: 0,
+					y: 0,
+				},
+			};
 		}
 
-		// Move to the right
-		if (equals(direction, [1, 0])) {
-			// End of line
-			if (
-				screenState.cursorPosition.x ===
-				screenState.content[screenState.cursorPosition.y].length + 1
-			) {
-				if (screenState.cursorPosition.y === screenState.content.length + 1) {
-					// Can't go further
+		while (true) {
+			// Move to left
+			if (equals(direction, [-1, 0])) {
+				// Start of line
+				if (screenState.cursorPosition.x === 0) {
+					if (screenState.cursorPosition.y === 0) {
+						// Can't go any further
+					} else {
+						// Move cursor to end of prev line
+						screenState.cursorPosition.y -= 1;
+						screenState.cursorPosition.x =
+							screenState.content[screenState.cursorPosition.y].length;
+					}
 				} else {
+					if (ctrl) {
+						screenState.cursorPosition.x -= 2;
+
+						// Jump whole word
+						while (true) {
+							// Check if at start
+							if (screenState.cursorPosition.x <= 0) {
+								break;
+							}
+
+							if (
+								screenState.content[screenState.cursorPosition.y][
+									screenState.cursorPosition.x
+								] === " "
+							) {
+								screenState.cursorPosition.x += 1;
+
+								break;
+							}
+
+							screenState.cursorPosition.x -= 1;
+						}
+					} else {
+						screenState.cursorPosition.x -= 1;
+					}
+				}
+
+				break;
+			}
+
+			// Move to the right
+			if (equals(direction, [1, 0])) {
+				// End of line
+				if (
+					screenState.cursorPosition.x ===
+					screenState.content[screenState.cursorPosition.y].length + 1
+				) {
+					if (screenState.cursorPosition.y === screenState.content.length + 1) {
+						// Can't go further
+					} else {
+						// Move cursor to start of next line
+						screenState.cursorPosition.x = 0;
+						screenState.cursorPosition.y += 1;
+					}
+				} else if (
+					screenState.cursorPosition.x === screenState.content[screenState.cursorPosition.y].length
+				) {
 					// Move cursor to start of next line
 					screenState.cursorPosition.x = 0;
 					screenState.cursorPosition.y += 1;
-				}
-			} else if (
-				screenState.cursorPosition.x === screenState.content[screenState.cursorPosition.y].length
-			) {
-				// Move cursor to start of next line
-				screenState.cursorPosition.x = 0;
-				screenState.cursorPosition.y += 1;
-			} else {
-				if (ctrl) {
-					let wasSpace = false;
+				} else {
+					if (ctrl) {
+						let wasSpace = false;
 
-					// Jump whole word
-					while (true) {
-						// Check if at start
-						if (
-							screenState.cursorPosition.x >=
-							screenState.content[screenState.cursorPosition.y].length
-						) {
-							// Jump to next line
-							if (screenState.cursorPosition.y < screenState.content.length) {
-								screenState.cursorPosition.y += 1;
-								screenState.cursorPosition.x = 0;
-								wasSpace = false;
-							}
-							break;
-						}
-
-						if (
-							screenState.content[screenState.cursorPosition.y][
-								screenState.cursorPosition.x
-							] === " "
-						) {
-							wasSpace = true;
-						} else {
-							if (wasSpace == true) {
+						// Jump whole word
+						while (true) {
+							// Check if at start
+							if (
+								screenState.cursorPosition.x >=
+								screenState.content[screenState.cursorPosition.y].length
+							) {
+								// Jump to next line
+								if (screenState.cursorPosition.y < screenState.content.length) {
+									screenState.cursorPosition.y += 1;
+									screenState.cursorPosition.x = 0;
+									wasSpace = false;
+								}
 								break;
 							}
-						}
 
+							if (
+								screenState.content[screenState.cursorPosition.y][
+									screenState.cursorPosition.x
+								] === " "
+							) {
+								wasSpace = true;
+							} else {
+								if (wasSpace == true) {
+									break;
+								}
+							}
+
+							screenState.cursorPosition.x += 1;
+						}
+					} else {
 						screenState.cursorPosition.x += 1;
 					}
-				} else {
-					screenState.cursorPosition.x += 1;
 				}
+				break;
 			}
-			return;
-		}
 
-		//TODO: Keep x position on vertical move
-		// Move down
-		if (equals(direction, [0, -1])) {
-			if (screenState.cursorPosition.y === screenState.content.length) {
-			} else {
-				// At the bottom...
-
-				// Insert bottom line ar end if none
-				if (screenState.content[screenState.content.length - 1].trim() !== "") {
-					screenState.content.push("");
+			//TODO: Keep x position on vertical move
+			// Move down
+			if (equals(direction, [0, -1])) {
+				if (screenState.cursorPosition.y === screenState.content.length) {
 				} else {
-					if (screenState.cursorPosition.y === screenState.content.length - 1) {
-						return;
+					// At the bottom...
+
+					// Insert bottom line ar end if none
+					if (screenState.content[screenState.content.length - 1].trim() !== "") {
+						screenState.content.push("");
+					} else {
+						if (screenState.cursorPosition.y === screenState.content.length - 1) {
+							break;
+						}
+					}
+
+					screenState.cursorPosition.y += 1;
+
+					// Snap cursor to ending of text if over
+					if (
+						screenState.cursorPosition.x >
+						screenState.content[screenState.cursorPosition.y].length
+					) {
+						screenState.cursorPosition.x =
+							screenState.content[screenState.cursorPosition.y].length;
 					}
 				}
+			}
 
-				screenState.cursorPosition.y += 1;
+			// Move up
+			if (equals(direction, [0, 1])) {
+				if (screenState.cursorPosition.y === 0) {
+					// At the top...
+				} else {
+					screenState.cursorPosition.y -= 1;
 
-				// Snap cursor to ending of text if over
-				if (screenState.cursorPosition.x > screenState.content[screenState.cursorPosition.y].length) {
-					screenState.cursorPosition.x = screenState.content[screenState.cursorPosition.y].length;
+					// Snap cursor to ending of text if over
+					if (
+						screenState.cursorPosition.x >
+						screenState.content[screenState.cursorPosition.y].length
+					) {
+						screenState.cursorPosition.x =
+							screenState.content[screenState.cursorPosition.y].length;
+					}
 				}
 			}
+
+			break;
 		}
 
-		// Move up
-		if (equals(direction, [0, 1])) {
-			if (screenState.cursorPosition.y === 0) {
-				// At the top...
-			} else {
-				screenState.cursorPosition.y -= 1;
+		// Handle select
+		if (!shift && screenState.selection !== undefined) {
+			screenState.selection = undefined;
+		}
 
-				// Snap cursor to ending of text if over
-				if (screenState.cursorPosition.x > screenState.content[screenState.cursorPosition.y].length) {
-					screenState.cursorPosition.x = screenState.content[screenState.cursorPosition.y].length;
-				}
+		if (shift) {
+			console.log("hst");
+			if (screenState.selection === undefined) {
+				selection!.end = {
+					x: screenState.cursorPosition.x + 1,
+					y: screenState.cursorPosition.y,
+				};
+
+				screenState.selection = selection;
+			} else {
+				screenState.selection.end = {
+					x: screenState.cursorPosition.x + 1,
+					y: screenState.cursorPosition.y,
+				};
 			}
 		}
 	}
@@ -323,6 +374,8 @@ export class ScreenModeWriting extends ScreenMode {
 
 		screenState.cursorPosition.x += 1;
 	}
+
+	#emptySelection() {}
 }
 
 export class ScreenModeExiting extends ScreenMode {
@@ -396,7 +449,7 @@ export class ScreenModeSaving extends ScreenMode {
 		this.fileNameCursorPosition += 1;
 	}
 
-	moveCursor(direction: [number, number], ctrl: boolean, screenState: ScreenState) {
+	moveCursor(direction: [number, number], ctrl: boolean, shift: boolean, screenState: ScreenState) {
 		if (equals(direction, [-1, 0])) {
 			this.fileNameCursorPosition = Math.max(0, this.fileNameCursorPosition - 1);
 		} else if (equals(direction, [1, 0])) {
