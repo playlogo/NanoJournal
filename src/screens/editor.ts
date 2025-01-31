@@ -44,9 +44,9 @@ export class ScreenState {
 		this.closeCallback = closeCallback;
 
 		if (fileName.length > 0) {
-			setTimeout(() => {
+			setTimeout(async () => {
 				try {
-					this.content = this.storageAdapter.loadNote(this.fileName);
+					this.content = await this.storageAdapter.loadNote(this.fileName);
 				} catch {
 					this.content = ["Error: File not found"];
 				}
@@ -252,6 +252,8 @@ export class Editor {
 
 		// Draw Selection
 		if (this.state.selection) {
+			// TODO: FIX
+
 			this.context.beginPath();
 
 			const selection: typeof this.state.selection = JSON.parse(JSON.stringify(this.state.selection));

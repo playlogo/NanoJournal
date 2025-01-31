@@ -13,7 +13,7 @@ window.addEventListener("resize", () => {
 });
 
 // Simple text writing
-const manager = new Manager(context, true);
+const manager = new Manager(context, false);
 
 function renderFrame() {
 	manager.render();

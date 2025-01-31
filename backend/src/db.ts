@@ -1,23 +1,26 @@
-import { DB } from "https://deno.land/x/sqlite/mod.ts";
+import { DB } from "https://deno.land/x/sqlite@v3.9.1/mod.ts";
 
-// Open a database
-const db = new DB("test.db");
-db.execute(`
-  CREATE TABLE IF NOT EXISTS people (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT
-  )
-`);
+import { exists } from "./utils.ts";
 
-// Run a simple query
-for (const name of ["Peter Parker", "Clark Kent", "Bruce Wayne"]) {
-	db.query("INSERT INTO people (name) VALUES (?)", [name]);
+class Database {
+	db: DB | null = null;
+
+	async init() {
+		if (!(await exists("data/"))) {
+			await Deno.mkdir("data/");
+		}
+
+		// Open a database
+		this.db = new DB("data/notes.db");
+
+		this.db.execute(
+			`CREATE TABLE IF NOT EXISTS notes (id TEXT PRIMARY KEY,filename TEXT,creationDate INTEGER, lastEditDate INTEGER)`
+		);
+	}
+
+	close() {
+		this.db?.close();
+	}
 }
 
-// Print out data in table
-for (const [name] of db.query("SELECT name FROM people")) {
-	console.log(name);
-}
-
-// Close connection
-db.close();
+export default new Database();

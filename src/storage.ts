@@ -2,12 +2,14 @@ interface Note {
 	creationDate: Date;
 	lastEditDate: Date;
 	fileName: string;
+
+	id: string;
 }
 
 export abstract class StorageAdapter {
-	abstract listNotes(): string[];
-	abstract loadNote(fileName: string): string[];
-	abstract saveNote(fileName: string, content: string[]): void;
+	abstract listNotes(): Promise<string[]>;
+	abstract loadNote(id: string): Promise<string[]>;
+	abstract saveNote(id: string, fileName: string, content: string[]): Promise<void>;
 }
 
 export class StorageAdapterLocalStorage implements StorageAdapter {
@@ -39,7 +41,7 @@ export class StorageAdapterLocalStorage implements StorageAdapter {
 		}
 	}
 
-	listNotes() {
+	async listNotes() {
 		if (window.localStorage.getItem("notes") === null) {
 			return [];
 		}
@@ -49,15 +51,15 @@ export class StorageAdapterLocalStorage implements StorageAdapter {
 			.map((note) => note.fileName);
 	}
 
-	loadNote(fileName: string) {
-		if (window.localStorage.getItem("note_" + fileName) === null) {
+	async loadNote(id: string) {
+		if (window.localStorage.getItem("note_" + id) === null) {
 			throw new Error("Note not found");
 		}
 
-		return JSON.parse(window.localStorage.getItem(`note_${fileName}`)!) as string[];
+		return JSON.parse(window.localStorage.getItem(`note_${id}`)!) as string[];
 	}
 
-	saveNote(fileName: string, content: string[]): void {
+	async saveNote(id: string, fileName: string, content: string[]) {
 		const notes = JSON.parse(window.localStorage.getItem("notes")!) as Note[];
 
 		if (fileName === "") {
@@ -73,17 +75,67 @@ export class StorageAdapterLocalStorage implements StorageAdapter {
 			fileName = "Untitled" + nextId;
 		}
 
-		window.localStorage.setItem(`note_${fileName}`, JSON.stringify(content));
+		window.localStorage.setItem(`note_${id}`, JSON.stringify(content));
 
-		if (!this.listNotes().includes(fileName)) {
+		const notesList = await this.listNotes();
+
+		if (!notesList.includes(fileName)) {
 			// Add note to note list if it doesn't exist
-			notes.push({ creationDate: new Date(), fileName: fileName, lastEditDate: new Date() });
+			notes.push({ creationDate: new Date(), fileName: fileName, lastEditDate: new Date(), id: id });
 			window.localStorage.setItem("notes", JSON.stringify(notes));
 		} else {
 			// Update note creation date
 			const note = notes.find((note) => note.fileName === fileName);
 			note!.lastEditDate = new Date();
 			window.localStorage.setItem("notes", JSON.stringify(notes));
+		}
+	}
+}
+
+export class StorageAdapterRemote implements StorageAdapter {
+	lastNoteList: Note[] = [];
+
+	async listNotes() {
+		const res = await fetch(`/api/notes`);
+		const body = (await res.json()) as Note[];
+
+		this.lastNoteList = body;
+
+		return body.sort((a, b) => (a.lastEditDate > b.lastEditDate ? -1 : 1)).map((note) => note.fileName);
+	}
+
+	async loadNote(id: string) {
+		const res = await fetch(`/api/notes/${id}`);
+		const body = await res.json();
+
+		return body as string[];
+	}
+
+	async saveNote(id: string, fileName: string, content: string[]) {
+		if (fileName === "") {
+			// Find next free untitled name
+			const nextId =
+				this.lastNoteList
+					.filter((note) => note.fileName.startsWith("Untitled"))
+					.map((note) => {
+						return parseInt(note.fileName.replace("Untitled", ""));
+					})
+					.sort((a, b) => (a > b ? 1 : -1))[0] + 1;
+
+			fileName = "Untitled" + nextId;
+		}
+
+		const res = await fetch(`/api/notes/${fileName}`, {
+			method: "POST",
+			headers: {
+				Accept: "application/json",
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ id: id, fileName: fileName, content }),
+		});
+
+		if (!res.ok) {
+			throw new Error("Failed to save note");
 		}
 	}
 }

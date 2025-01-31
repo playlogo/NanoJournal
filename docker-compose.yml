@@ -1,0 +1,11 @@
+name: NanoJournal
+
+services:
+    server:
+        image: playlogo/nano_journal
+        restart: "unless-stopped"
+        build: .
+        volumes:
+            - ./data:/app/data
+        ports:
+            - "8000:8000"

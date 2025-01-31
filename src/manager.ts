@@ -1,7 +1,7 @@
 import { Editor } from "./screens/editor.js";
 import { Menu } from "./screens/menu.js";
 
-import { StorageAdapter, StorageAdapterLocalStorage } from "./storage.js";
+import { StorageAdapter, StorageAdapterLocalStorage, StorageAdapterRemote } from "./storage.js";
 
 export class ManagerState {
 	storageAdapter: StorageAdapter;
@@ -20,17 +20,17 @@ export class ManagerState {
 		if (demo) {
 			this.storageAdapter = new StorageAdapterLocalStorage(demo);
 		} else {
-			throw new Error("Not implemented");
+			this.storageAdapter = new StorageAdapterRemote();
 		}
 
 		this.menuScreen = new Menu(this.context, this);
 
 		// Load notes
 		setTimeout(
-			(() => {
-				this.notes = this.storageAdapter.listNotes();
+			(async () => {
+				this.notes = await this.storageAdapter.listNotes();
 			}).bind(this),
-			10
+			1000
 		);
 	}
 
@@ -54,10 +54,10 @@ export class ManagerState {
 		this.menuScreen.state.notesScrollPos = 0;
 
 		setTimeout(
-			(() => {
-				this.notes = this.storageAdapter.listNotes();
+			(async () => {
+				this.notes = await this.storageAdapter.listNotes();
 			}).bind(this),
-			10
+			1000
 		);
 	}
 }

@@ -72,6 +72,12 @@ export class ScreenModeWriting extends ScreenMode {
 					this.#emptySelection(screenState);
 				}
 				return true;
+			case "ALT-v":
+				if (screenState.selection !== undefined) {
+					// Empty selection
+					this.#emptySelection(screenState);
+				}
+				return true;
 			case "CTL-r":
 				window.location.reload();
 			default:
@@ -275,6 +281,12 @@ export class ScreenModeWriting extends ScreenMode {
 	}
 
 	delete(ctrl: boolean, screenState: ScreenState) {
+		if (screenState.selection !== undefined) {
+			// Empty selection
+			this.#emptySelection(screenState);
+			return;
+		}
+
 		// Check if in last line
 		if (screenState.cursorPosition.y === screenState.content.length) {
 			// Do nothing
@@ -325,6 +337,12 @@ export class ScreenModeWriting extends ScreenMode {
 	}
 
 	backspace(ctrl: boolean, screenState: ScreenState) {
+		if (screenState.selection !== undefined) {
+			// Empty selection
+			this.#emptySelection(screenState);
+			return;
+		}
+
 		if (screenState.cursorPosition.x === 0) {
 			// Check if in first line
 			if (screenState.cursorPosition.y === 0) {
@@ -404,6 +422,11 @@ export class ScreenModeWriting extends ScreenMode {
 	}
 
 	type(char: string, screenState: ScreenState) {
+		if (screenState.selection !== undefined) {
+			// Empty selection
+			this.#emptySelection(screenState);
+		}
+
 		// Insert the char before cursor position
 		screenState.content[screenState.cursorPosition.y] =
 			screenState.content[screenState.cursorPosition.y].slice(0, screenState.cursorPosition.x) +
@@ -414,6 +437,8 @@ export class ScreenModeWriting extends ScreenMode {
 	}
 
 	#emptySelection(screenState: ScreenState) {
+		// TODO: FIX!
+
 		screenState.selection = screenState.selection!;
 
 		let selection: typeof screenState.selection = JSON.parse(JSON.stringify(screenState.selection));
@@ -436,8 +461,6 @@ export class ScreenModeWriting extends ScreenMode {
 
 		let deleteCount = 0;
 
-		console.log("sadd");
-
 		for (let i = selection.start.y; i <= selection.end.y; i++) {
 			const lineContent = screenState.content[i - deleteCount];
 
@@ -459,6 +482,8 @@ export class ScreenModeWriting extends ScreenMode {
 			}
 		}
 
+		screenState.cursorPosition.x = selection.start.x;
+		screenState.cursorPosition.y = selection.start.y;
 		screenState.selection = undefined;
 	}
 
