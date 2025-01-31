@@ -22,10 +22,10 @@ It lacks most of the advanced features listed above, but should demonstrate easy
 ## Roadmap
 
 - [x] Scrolling (quite the basic feature, right ?)
-- [ ] Syncing across devices (A deno.js backend server with sqlite)
+- [x] Syncing across devices (A deno.js backend server with sqlite)
   - [x] Deno backend
-  - [ ] Rewrite frontend file handling
-- [ ] Tags
+  - [x] Rewrite frontend file handling
+- [x] Tags
   - [x] Frontend support
   - [ ] Backend support
 - [ ] Bug fixes

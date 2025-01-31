@@ -178,10 +178,12 @@ export class Editor {
 		this.context.fillStyle = FG;
 
 		const tag_colors: { [key: string]: string } = {
-			home: "#8bd4a1",
-			school: "#f59153",
+			productivity: "#8bd4a1",
+			social: "#f59153",
 			fallback: "#d34a4f",
-			log: "#d9ceec",
+			journal: "#a586d9",
+			wellness: "#ff4fad",
+			progress: "#8bd4a1",
 		};
 
 		for (
@@ -338,7 +340,7 @@ export class Editor {
 
 		switch (this.state.mode) {
 			case ScreenGlobalState.WRITING:
-				options = ["^X Exit", "^R Reload", "M-C Copy", "M-X Cut", "M-P Paste"];
+				options = ["^X Exit", "^R Reload", "M-C Copy", "M-X Cut"];
 				break;
 			case ScreenGlobalState.EXITING:
 				options = [" Y Yes", " N No", "^C Cancel"];
