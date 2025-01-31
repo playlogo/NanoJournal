@@ -139,7 +139,7 @@ export class StorageAdapterRemote implements StorageAdapter {
 		});
 
 		if (!res.ok) {
-			throw new Error("Failed to save note");
+			throw new Error((await res.text()).slice(1, -1));
 		}
 	}
 }

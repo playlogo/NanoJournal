@@ -13,8 +13,11 @@ export default function router_notes(server: Server) {
 	server.post("/api/notes", res("json"), req("json"), async (ctx: Context, next: NextFunc) => {
 		// Demo mode
 		if (Deno.env.get("DEMO") === "true") {
-			ctx.res.body = { error: "Saving files is disable in this demo environment" };
 			ctx.res.status = 500;
+			ctx.res.body = "Saving files has been disable| in this demo environment| to prevent spam";
+
+			await next();
+
 			return;
 		}
 

@@ -2,6 +2,7 @@ import { BG, FG, FONT_NORMAL, LINE_HEIGHT, PADDING } from "../style.js";
 import { Note, StorageAdapter } from "../storage.js";
 import { cyrb53 } from "../utils.js";
 import { ScreenModeWriting, ScreenModeExiting, ScreenModeSaving } from "./editor_modes.js";
+import { ManagerState } from "../manager.js";
 
 export const ScreenGlobalState = {
 	WRITING: new ScreenModeWriting(),
@@ -26,12 +27,19 @@ export class ScreenState {
 	selection: undefined | { start: { x: number; y: number }; end: { x: number; y: number } } = undefined;
 
 	storageAdapter: StorageAdapter;
+	managerState: ManagerState;
 	closeCallback: () => void;
 
-	constructor(note: Note, storageAdapter: StorageAdapter, closeCallback: () => void) {
+	constructor(
+		note: Note,
+		storageAdapter: StorageAdapter,
+		managerState: ManagerState,
+		closeCallback: () => void
+	) {
 		this.note = note;
 
 		this.storageAdapter = storageAdapter;
+		this.managerState = managerState;
 		this.closeCallback = closeCallback;
 
 		if (this.note.filename.length > 0) {
@@ -65,12 +73,13 @@ export class Editor {
 		note: Note,
 		context: CanvasRenderingContext2D,
 		storageAdapter: StorageAdapter,
+		managerState: ManagerState,
 		closeCallback: () => void
 	) {
 		this.note = note;
 		this.context = context;
 
-		this.state = new ScreenState(this.note, storageAdapter, closeCallback);
+		this.state = new ScreenState(this.note, storageAdapter, managerState, closeCallback);
 	}
 
 	// Draw to the screen

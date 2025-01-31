@@ -1,5 +1,6 @@
 import { ScreenState, ScreenGlobalState } from "./editor.js";
 import { equals, cyrb53 } from "../utils.js";
+import { Modal } from "../manager.js";
 
 export abstract class ScreenMode {
 	abstract handleCommand(command: string, screenState: ScreenState): boolean;
@@ -154,16 +155,20 @@ export class ScreenModeWriting extends ScreenMode {
 					if (screenState.cursorPosition.y === screenState.content.length + 1) {
 						// Can't go further
 					} else {
-						// Move cursor to start of next line
-						screenState.cursorPosition.x = 0;
-						screenState.cursorPosition.y += 1;
+						if (screenState.content.length > screenState.cursorPosition.y + 1) {
+							// Move cursor to start of next line
+							screenState.cursorPosition.x = 0;
+							screenState.cursorPosition.y += 1;
+						}
 					}
 				} else if (
 					screenState.cursorPosition.x === screenState.content[screenState.cursorPosition.y].length
 				) {
-					// Move cursor to start of next line
-					screenState.cursorPosition.x = 0;
-					screenState.cursorPosition.y += 1;
+					if (screenState.content.length > screenState.cursorPosition.y + 1) {
+						// Move cursor to start of next line
+						screenState.cursorPosition.x = 0;
+						screenState.cursorPosition.y += 1;
+					}
 				} else {
 					if (ctrl) {
 						let wasSpace = false;
@@ -645,9 +650,17 @@ export class ScreenModeSaving extends ScreenMode {
 		this.fileNameCursorPosition = Math.max(0, this.fileNameCursorPosition - 1);
 	}
 
-	enter(screenState: ScreenState) {
+	async enter(screenState: ScreenState) {
 		this.startFilename = undefined;
-		screenState.storageAdapter.saveNote(screenState.note, screenState.content);
-		screenState.closeCallback();
+		try {
+			await screenState.storageAdapter.saveNote(screenState.note, screenState.content);
+			screenState.closeCallback();
+		} catch (err) {
+			screenState.managerState.modal = new Modal(
+				screenState.managerState,
+				err.message,
+				screenState.closeCallback
+			);
+		}
 	}
 }
