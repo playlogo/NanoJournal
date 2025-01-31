@@ -655,7 +655,7 @@ export class ScreenModeSaving extends ScreenMode {
 		try {
 			await screenState.storageAdapter.saveNote(screenState.note, screenState.content);
 			screenState.closeCallback();
-		} catch (err) {
+		} catch (err: any) {
 			screenState.managerState.modal = new Modal(
 				screenState.managerState,
 				err.message,
