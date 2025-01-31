@@ -34,6 +34,44 @@ export class ScreenModeWriting extends ScreenMode {
 				}
 
 				return true;
+			case "ALT-v":
+				if (screenState.selection !== undefined) {
+					// Collect selection
+					const text = this.#collectSelection(screenState);
+
+					// Copy selection
+					navigator.clipboard.writeText(text).then(
+						function () {
+							console.log("Async: Copying to clipboard was successful!");
+						},
+						function (err) {
+							console.error("Async: Could not copy text: ", err);
+						}
+					);
+
+					// Empty selection
+					screenState.selection = undefined;
+				}
+				return true;
+			case "ALT-x":
+				if (screenState.selection !== undefined) {
+					// Collect selection
+					const text = this.#collectSelection(screenState);
+
+					// Copy selection
+					navigator.clipboard.writeText(text).then(
+						function () {
+							console.log("Async: Copying to clipboard was successful!");
+						},
+						function (err) {
+							console.error("Async: Could not copy text: ", err);
+						}
+					);
+
+					// Empty selection
+					this.#emptySelection(screenState);
+				}
+				return true;
 			case "CTL-r":
 				window.location.reload();
 			default:
@@ -375,7 +413,97 @@ export class ScreenModeWriting extends ScreenMode {
 		screenState.cursorPosition.x += 1;
 	}
 
-	#emptySelection() {}
+	#emptySelection(screenState: ScreenState) {
+		screenState.selection = screenState.selection!;
+
+		let selection: typeof screenState.selection = JSON.parse(JSON.stringify(screenState.selection));
+		selection = selection!;
+
+		// Flip them if required
+		let flip = false;
+
+		if (selection.end.y < selection.start.y) {
+			flip = true;
+		}
+		if (selection.start.y === selection.end.y && selection.end.x < selection.start.x) {
+			flip = true;
+		}
+
+		if (flip) {
+			selection.end = screenState.selection.start;
+			selection.start = screenState.selection.end;
+		}
+
+		let deleteCount = 0;
+
+		console.log("sadd");
+
+		for (let i = selection.start.y; i <= selection.end.y; i++) {
+			const lineContent = screenState.content[i - deleteCount];
+
+			const selectionLength =
+				selection.end.y === i
+					? selection.end.x - selection.start.x
+					: lineContent?.length
+					? lineContent?.length
+					: 0;
+
+			if (selection.start.y !== selection.end.y && selection.start.y < i && selection.end.y > i) {
+				screenState.content.splice(i - deleteCount);
+				deleteCount++;
+			} else {
+				screenState.content[i - deleteCount] = lineContent.slice(
+					selection.start.y === i ? selection.start.x : 0,
+					selection.end.y === i ? selectionLength : undefined
+				);
+			}
+		}
+
+		screenState.selection = undefined;
+	}
+
+	#collectSelection(screenState: ScreenState) {
+		screenState.selection = screenState.selection!;
+
+		let text = "";
+
+		let selection: typeof screenState.selection = JSON.parse(JSON.stringify(screenState.selection));
+		selection = selection!;
+
+		// Flip them if required
+		let flip = false;
+
+		if (selection.end.y < selection.start.y) {
+			flip = true;
+		}
+		if (selection.start.y === selection.end.y && selection.end.x < selection.start.x) {
+			flip = true;
+		}
+
+		if (flip) {
+			selection.end = screenState.selection.start;
+			selection.start = screenState.selection.end;
+		}
+
+		for (let i = selection.start.y; i <= selection.end.y; i++) {
+			const selectionLength =
+				selection.end.y === i
+					? selection.end.x - selection.start.x
+					: screenState.content[i]?.length
+					? screenState.content[i]?.length
+					: 0;
+
+			let content = screenState.content[i] ? screenState.content[i] : "";
+
+			text += (selection.start.y === i ? content.slice(selection.start.x) : content).slice(
+				0,
+				selection.end.y === i ? selectionLength : undefined
+			);
+			text += "\n";
+		}
+
+		return text;
+	}
 }
 
 export class ScreenModeExiting extends ScreenMode {

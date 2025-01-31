@@ -290,8 +290,6 @@ export class Editor {
 					PADDING + 22 + i * LINE_HEIGHT,
 				];
 
-				console.log(i, startScreenPosition, pos);
-
 				const selectionLength =
 					selection.end.y === i
 						? selection.end.x - selection.start.x - this.state.scrollPosition.x
@@ -338,7 +336,7 @@ export class Editor {
 
 		switch (this.state.mode) {
 			case ScreenGlobalState.WRITING:
-				options = ["^G Help", "^X Exit", "^R Reload"];
+				options = ["^X Exit", "^R Reload", "M-C Copy", "M-X Cut", "M-P Paste"];
 				break;
 			case ScreenGlobalState.EXITING:
 				options = [" Y Yes", " N No", "^C Cancel"];
@@ -356,19 +354,21 @@ export class Editor {
 			const leftPos = Math.floor(i / 2);
 			const topPos = i % 2;
 
+			const shortcutLength = Math.max(2, options[i].trim().split(" ")[0].length);
+
 			// Draw background box
 			this.context.fillStyle = FG;
 			this.context.fillRect(
 				PADDING + leftPos * 240,
 				this.context.canvas.height - PADDING - LINE_HEIGHT - topPos * LINE_HEIGHT,
-				18,
+				shortcutLength * 9,
 				18
 			);
 
 			// Draw Shortcut text
 			this.context.fillStyle = BG;
 			this.context.fillText(
-				options[i].slice(0, 2),
+				options[i].slice(0, shortcutLength),
 				PADDING + leftPos * 240,
 				this.context.canvas.height - PADDING - topPos * LINE_HEIGHT - 3
 			);
@@ -376,8 +376,8 @@ export class Editor {
 			// Draw option text
 			this.context.fillStyle = FG;
 			this.context.fillText(
-				options[i].slice(2),
-				PADDING + leftPos * 240 + 16,
+				options[i].slice(shortcutLength),
+				PADDING + leftPos * 240 + shortcutLength * 8,
 				this.context.canvas.height - PADDING - topPos * LINE_HEIGHT - 3
 			);
 		}
@@ -464,8 +464,11 @@ export class Editor {
 	// Handle keyboard input
 	key(event: KeyboardEvent) {
 		// Shortcuts
-		if (event.ctrlKey) {
-			const hit = this.state.mode.handleCommand("CTL-" + event.key, this.state);
+		if (event.ctrlKey || event.altKey) {
+			const hit = this.state.mode.handleCommand(
+				(event.ctrlKey ? "CTL-" : "") + (event.altKey ? "ALT-" : "") + event.key,
+				this.state
+			);
 
 			if (hit) {
 				event.preventDefault();
