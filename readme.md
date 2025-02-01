@@ -33,6 +33,13 @@ It lacks most of the advanced features you would expect from a text editor, but 
 - Mouse support
 - [x] A mobile friendly interface (as long as you use a keyboard :D)
 
+## Setup
+
+1. Clone this repo: `git clone https://github.com/playlogo/NanoJournal.git`
+Optional: Enable demo mode by setting the env variable DEMO to 'true': `export DEMO=true`
+2. Build & start the docker container: `docker compose up -d --build`
+3. Go to `http://<your-ip>:8000`!
+
 ## Screenshots
 
 ![Menu screen](https://raw.githubusercontent.com/playlogo/NanoJournal/refs/heads/master/doc/editor.png)
